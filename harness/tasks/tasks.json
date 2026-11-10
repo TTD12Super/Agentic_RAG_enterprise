@@ -428,7 +428,7 @@
       "phase": 2,
       "title": "Choose embedding/reranker adapters and provider policy",
       "owner": "backend",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "INFRA-001",
         "BACKEND-BOOT-001"
@@ -454,7 +454,7 @@
       "phase": 2,
       "title": "Implement metadata and parent-child chunk schema",
       "owner": "ingestion",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "CONTRACT-001",
         "INFRA-001",
