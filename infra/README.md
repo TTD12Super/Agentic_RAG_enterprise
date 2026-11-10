@@ -6,7 +6,7 @@ The Infrastructure module provides development environments, containerization, s
 
 It supports reproducible environments, operational reliability, and secure service integration.
 
-**Status:** Development harness; infrastructure implementation pending.
+**Status:** Development-service and migration-runner baseline implemented; production infrastructure and monitoring remain pending.
 
 ## 2. Technology Stack
 
@@ -61,6 +61,12 @@ infra/
 ```
 
 Directories represent planned infrastructure boundaries and may contain placeholders.
+
+The local development baseline is `infra/docker/development.compose.yml`. It
+starts only a disposable PostgreSQL service on loopback port 55433. The
+Backend-owned Alembic chain is executed through `infra/scripts/migrate.sh`;
+DevOps owns service startup, upgrade/rollback orchestration and cleanup, not
+schema definitions.
 
 ## 4. Architecture & Conventions
 

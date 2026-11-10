@@ -6,7 +6,7 @@ The Backend provides APIs, identity management, authorization, persistence, and 
 
 It serves as the authoritative layer for access control, data integrity, and business logic.
 
-**Status:** Development harness; implementation pending.
+**Status:** Runtime shell implemented; feature modules remain task-scoped.
 
 ## 2. Technology Stack
 
@@ -50,6 +50,40 @@ backend/
 ```
 
 Directories represent planned module boundaries and may not yet contain implementations.
+
+## Local runtime commands
+
+Run these commands from the repository root after creating a local environment:
+
+```bash
+python3 -m venv backend/.venv
+backend/.venv/bin/python -m pip install -e 'backend[dev]'
+backend/.venv/bin/python -m compileall backend
+backend/.venv/bin/python -m pytest backend/tests
+
+For the Backend-owned migration runner, install the database extra and use the
+disposable PostgreSQL service from infra/docker/postgres-test.compose.yml:
+
+    backend/.venv/bin/python -m pip install -e 'backend[db]'
+    export DB001_DATABASE_URL='postgresql+psycopg://enterprise_rag_test:synthetic_only_not_secret@127.0.0.1:55432/enterprise_rag_test'
+    backend/.venv/bin/alembic -c backend/app/db/alembic.ini upgrade head
+    backend/.venv/bin/alembic -c backend/app/db/alembic.ini downgrade base
+
+Only synthetic disposable credentials belong in local commands. Production
+database URLs must come from the approved secret-management path.
+```
+
+Start the shell locally from the repository root with:
+
+```bash
+backend/.venv/bin/python -m uvicorn backend.app.main:app --reload
+```
+
+The only route in this task is `GET /healthz`, which checks process liveness
+without contacting PostgreSQL, Qdrant, Redis, object storage or an LLM.
+
+`.env.example` lists configuration names only. Copy it to `.env` only for
+local configuration; never commit real credentials.
 
 ## 4. Architecture & Conventions
 

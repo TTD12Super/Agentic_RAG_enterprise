@@ -8,7 +8,27 @@
 6. Rollback application or switch ACTIVE index/version if smoke tests fail. Never rollback in a way that re-grants revoked data.
 7. Verify backups and restore drills; document recovery point/time targets once approved.
 
-**Not executable yet:** docker manifests and deployment pipeline will be produced by Phase 1/5 tasks.
+The Phase 1 local development compose and migration runner are executable for
+synthetic disposable data. Production manifests, deployment pipeline and
+release authorization remain pending later tasks.
+
+## Local monitoring baseline
+
+The provider-neutral monitoring stack is under `infra/monitoring/` and is
+loopback-only. From the repository root:
+
+```bash
+docker compose -f infra/monitoring/compose.yml config --quiet
+docker compose -f infra/monitoring/compose.yml up -d
+docker compose -f infra/monitoring/compose.yml down --remove-orphans
+```
+
+It provides an OpenTelemetry Collector metrics receiver, Prometheus rules,
+Grafana's private Prometheus datasource and a local Alertmanager sink. The
+Collector removes identity/resource/content attributes before export. No
+external alert recipient, trace backend, API key or cloud resource is
+configured. Production retention, access control, backups and recipients need
+separate approval and evidence.
 
 ## Owner-provided operating baseline
 

@@ -1,0 +1,27 @@
+groups:
+  - name: enterprise-rag-baseline
+    rules:
+      - alert: ApiHighErrorRate
+        expr: sum(rate(http_server_request_count{http_status_code=~"5.."}[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: P1
+        annotations:
+          summary: API 5xx error rate is elevated
+          runbook: docs/operations/incident-response.md
+      - alert: PolicyDeniedSpike
+        expr: sum(rate(authorization_denied_total[5m])) > 1
+        for: 5m
+        labels:
+          severity: P0
+        annotations:
+          summary: Authorization denials require investigation
+          runbook: docs/operations/incident-response.md
+      - alert: CollectorMissingMetrics
+        expr: absent(up{job="otel-collector"})
+        for: 5m
+        labels:
+          severity: P3
+        annotations:
+          summary: Collector metrics are missing
+          runbook: docs/operations/incident-response.md

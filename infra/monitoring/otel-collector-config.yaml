@@ -1,0 +1,55 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 128
+  attributes/privacy:
+    actions:
+      - key: user.id
+        action: delete
+      - key: enduser.id
+        action: delete
+      - key: document.id
+        action: delete
+      - key: query
+        action: delete
+      - key: prompt
+        action: delete
+      - key: answer
+        action: delete
+      - key: source.text
+        action: delete
+      - key: conversation.body
+        action: delete
+      - key: authorization
+        action: delete
+      - key: api.key
+        action: delete
+  batch:
+    timeout: 5s
+    send_batch_size: 256
+
+exporters:
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    resource_to_telemetry_conversion:
+      enabled: true
+
+service:
+  telemetry:
+    logs:
+      level: warn
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, attributes/privacy, batch]
+      exporters: [prometheus]
+
+# Traces/logs stay provider-neutral until a redacted backend is approved.

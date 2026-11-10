@@ -6,7 +6,7 @@ The Frontend provides user interfaces for authentication, enterprise knowledge c
 
 Backend services remain responsible for authentication and authorization enforcement.
 
-**Status:** Development harness; implementation pending.
+**Status:** Frontend bootstrap baseline; product screens are deferred to `UI-001`.
 
 ## 2. Technology Stack
 
@@ -14,7 +14,8 @@ Backend services remain responsible for authentication and authorization enforce
 - Language: TypeScript
 - Backend: FastAPI
 - UI Design: Figma (`docs/design/`)
-- Other libraries: Follow approved architecture decisions.
+- Build: Vite
+- Tests: Vitest + Testing Library
 
 ## 3. Project Structure
 
@@ -56,6 +57,25 @@ Before implementation:
 Use commands defined in the project's `package.json`.
 
 Do not assume scripts exist before verifying them.
+
+### Local commands
+
+```bash
+npm install
+npm run dev
+npm run typecheck
+npm run lint
+npm test
+npm run build
+```
+
+Copy `.env.example` to `.env.local` when a local API URL is needed. `VITE_*` values are browser-visible configuration, never API keys or other secrets. The shell does not call the backend yet.
+
+### Contract boundary
+
+The shell follows the approved v1 contract and `docs/design/IMPLEMENTATION-BOUNDARY.md`: canonical role identifiers, backend-authoritative authorization, durable-job polling, and no MVP token streaming. Figma remains the visual source of truth; this task adds no product feature or API integration.
+
+The later frontend implementation goal must provide the required four test families with at least 10 materially different cases per family (40 cases total): behavior/component, contract/integration, security/adversarial, and E2E/operational. This bootstrap only proves the shell renders; it does not claim those later feature gates.
 
 ## 6. References
 

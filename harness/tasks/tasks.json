@@ -25,15 +25,24 @@
     "CONTRACT-001": {"requested_agents": 1},
     "CONTRACT-TEST-001": {"requested_agents": 1},
     "BACKEND-BOOT-001": {"requested_agents": 1},
+    "BACKEND-BOOT-QA-001": {"requested_agents": 1},
     "FRONTEND-BOOT-001": {"requested_agents": 1},
+    "FRONTEND-BOOT-QA-001": {"requested_agents": 1},
     "INFRA-BOOT-001": {"requested_agents": 1},
+    "INFRA-BOOT-QA-001": {"requested_agents": 1},
     "DB-001": {"requested_agents": 1},
+    "DB-QA-001": {"requested_agents": 1},
     "INFRA-001": {"requested_agents": 1},
+    "INFRA-QA-001": {"requested_agents": 1},
     "INFRA-002": {"requested_agents": 1},
     "INFRA-003": {"requested_agents": 1},
     "IDENT-001": {"requested_agents": 1},
+    "IDENT-QA-001": {"requested_agents": 1},
     "AUTH-001": {"requested_agents": 1},
+    "AUTH-QA-001": {"requested_agents": 1},
     "AUDIT-001": {"requested_agents": 1},
+    "AUDIT-QA-001": {"requested_agents": 1},
+    "INFRA-MONITOR-QA-001": {"requested_agents": 1},
     "EVAL-PREP-001": {"requested_agents": 1},
     "MODEL-001": {"requested_agents": 1},
     "KNOW-001": {"requested_agents": 1},
@@ -136,7 +145,7 @@
       "phase": 1,
       "title": "Bootstrap backend runtime and test baseline",
       "owner": "backend",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "CONTRACT-001"
       ],
@@ -162,7 +171,7 @@
       "phase": 1,
       "title": "Bootstrap frontend build and test baseline",
       "owner": "frontend",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "CONTRACT-001"
       ],
@@ -188,7 +197,7 @@
       "phase": 1,
       "title": "Prepare isolated disposable PostgreSQL for migration tests",
       "owner": "devops",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": ["CONTRACT-001"],
       "deliverables": ["Local disposable PostgreSQL test service and synthetic-only connection instructions", "Recorded startup, isolation and safe cleanup procedure"],
       "acceptance": "Backend can connect to an isolated PostgreSQL instance for DB-001 upgrade and rollback tests; service uses synthetic data and no production credentials or paid resources; DevOps records startup and safe cleanup evidence.",
@@ -208,7 +217,7 @@
       "phase": 1,
       "title": "Own database schema and migration baseline",
       "owner": "backend",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "CONTRACT-001",
         "BACKEND-BOOT-001",
@@ -236,7 +245,7 @@
       "phase": 1,
       "title": "Create reproducible development services and migration runner",
       "owner": "devops",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "CONTRACT-001",
         "DB-001",
@@ -288,7 +297,7 @@
       "phase": 1,
       "title": "Implement monitoring platform baseline",
       "owner": "devops",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "INFRA-001",
         "INFRA-002",
@@ -316,7 +325,7 @@
       "phase": 1,
       "title": "Implement identity and API shell",
       "owner": "backend",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "CONTRACT-001",
         "BACKEND-BOOT-001"
@@ -342,7 +351,7 @@
       "phase": 1,
       "title": "Implement PDP/PEPs and RBAC/ABAC/ACL policies",
       "owner": "security",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "IDENT-001",
         "CONTRACT-001"
@@ -368,7 +377,7 @@
       "phase": 1,
       "title": "Implement application telemetry and privacy-safe audit",
       "owner": "backend",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "IDENT-001",
         "INFRA-001"
@@ -394,7 +403,7 @@
       "phase": 1,
       "title": "Prepare evaluation harness and golden fixtures",
       "owner": "qa_tester",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "CONTRACT-001"
       ],
@@ -872,6 +881,213 @@
       "contracts": ["docs/contracts/agent-tools.md", "docs/contracts/identity-and-policy.md", "docs/contracts/events-and-audit.md"],
       "validation": ["Run connector schema, identity, consent, timeout, audit and cross-tenant integration tests", "Verify each external source has explicit Owner approval before enablement", "Record external data-processing and deployment constraints"],
       "handoff": "harness/handoffs/INT-001.md"
+    },
+    {
+      "id": "AUTH-QA-001",
+      "phase": 1,
+      "title": "Run four-family QA for authorization policy enforcement",
+      "owner": "qa_tester",
+      "status": "DONE",
+      "depends_on": ["AUTH-001"],
+      "deliverables": [
+        "Authorization QA package with four families and at least 10 materially different cases per family",
+        "QA handoff with denial, tenant and explicit-deny evidence"
+      ],
+      "acceptance": "At least 40 deterministic authorization cases pass across behavior/component, contract/integration, security/adversarial and E2E/operational families; no forbidden-source or cross-tenant allow is observed.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "tests/AGENTS.md", "backend/AGENTS.md", "backend/app/authorization", "backend/app/identity", "backend/tests", "docs/contracts/identity-and-policy.md", "docs/security", "docs/testing"],
+        "write_paths": ["tests/qa/authorization", "harness/handoffs"],
+        "forbidden_paths": ["backend", "frontend", "infra", "docs/contracts", "harness/tasks/tasks.json", ".env", "data"]
+      },
+      "architecture_blocks": ["03", "04"],
+      "requirements": ["NFR-QA-005", "FR-AUTH-007", "FR-AUTH-008", "NFR-SEC-001"],
+      "contracts": ["docs/contracts/identity-and-policy.md", "docs/contracts/events-and-audit.md"],
+      "validation": ["python3 -m unittest discover -s tests/qa/authorization -p 'test_*.py'", "Record four-family count and denial evidence in the handoff"],
+      "handoff": "harness/handoffs/AUTH-QA-001.md"
+    },
+    {
+      "id": "INFRA-QA-001",
+      "phase": 1,
+      "title": "Run four-family QA for development infrastructure",
+      "owner": "qa_tester",
+      "status": "DONE",
+      "depends_on": ["INFRA-001"],
+      "deliverables": [
+        "Development infrastructure QA package with four families and at least 10 materially different cases per family",
+        "QA handoff with exact commands, migration execution and residual risks"
+      ],
+      "acceptance": "At least 40 deterministic infrastructure cases pass across behavior/component, contract/integration, security/adversarial and E2E/operational families; production provisioning remains deferred.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "tests/AGENTS.md", "infra/AGENTS.md", "infra/docker", "infra/scripts", "docs/database/database.md", "docs/operations", "docs/testing"],
+        "write_paths": ["tests/qa/infra_dev", "harness/handoffs"],
+        "forbidden_paths": ["backend", "frontend", "infra", "docs/database", "docs/contracts", "harness/tasks/tasks.json", ".env", "data"]
+      },
+      "architecture_blocks": ["12", "17"],
+      "requirements": ["NFR-QA-005", "NFR-DEP-002"],
+      "contracts": ["docs/contracts/v1-baseline.md"],
+      "validation": ["python3 -m unittest discover -s tests/qa/infra_dev -p 'test_*.py'", "Record four-family count and actual development-service results in the handoff"],
+      "handoff": "harness/handoffs/INFRA-QA-001.md"
+    },
+    {
+      "id": "IDENT-QA-001",
+      "phase": 1,
+      "title": "Run four-family QA for identity and API shell",
+      "owner": "qa_tester",
+      "status": "DONE",
+      "depends_on": ["IDENT-001"],
+      "deliverables": [
+        "Identity QA package with four families and at least 10 materially different cases per family",
+        "QA handoff with exact commands, denial evidence and residual risks"
+      ],
+      "acceptance": "At least 40 deterministic identity/API cases pass across behavior/component, contract/integration, security/adversarial and E2E/operational families; provider and production identity remain deferred.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "tests/AGENTS.md", "backend/AGENTS.md", "backend/app/identity", "backend/app/api", "backend/tests", "docs/contracts/identity-and-policy.md", "docs/contracts/events-and-audit.md", "docs/security", "docs/testing"],
+        "write_paths": ["tests/qa/identity", "harness/handoffs"],
+        "forbidden_paths": ["backend", "frontend", "infra", "docs/contracts", "harness/tasks/tasks.json", ".env", "data"]
+      },
+      "architecture_blocks": ["02", "03", "15"],
+      "requirements": ["NFR-QA-005", "FR-AUTH-007", "FR-AUTH-008"],
+      "contracts": ["docs/contracts/identity-and-policy.md", "docs/contracts/events-and-audit.md"],
+      "validation": ["python3 -m unittest discover -s tests/qa/identity -p 'test_*.py'", "Record four-family count and actual identity/API results in the handoff"],
+      "handoff": "harness/handoffs/IDENT-QA-001.md"
+    },
+    {
+      "id": "DB-QA-001",
+      "phase": 1,
+      "title": "Run four-family QA for database schema and migrations",
+      "owner": "qa_tester",
+      "status": "DONE",
+      "depends_on": ["DB-001"],
+      "deliverables": [
+        "Database QA package with four families and at least 10 materially different cases per family",
+        "QA handoff with exact commands, migration/rollback evidence and residual risks"
+      ],
+      "acceptance": "At least 40 deterministic database cases pass across behavior/component, contract/integration, security/adversarial and E2E/operational families against the disposable PostgreSQL service; production data and cloud resources remain out of scope.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "tests/AGENTS.md", "backend/AGENTS.md", "docs/database/database.md", "docs/contracts/v1-baseline.md", "backend/app/db", "backend/tests", "infra/docker/postgres-test.compose.yml", "docs/testing"],
+        "write_paths": ["tests/qa/db", "harness/handoffs"],
+        "forbidden_paths": ["backend", "frontend", "infra", "docs/database", "docs/contracts", "harness/tasks/tasks.json", ".env", "data"]
+      },
+      "architecture_blocks": ["10", "11", "12", "13", "17"],
+      "requirements": ["NFR-QA-005", "NFR-DATA-001", "NFR-DATA-002"],
+      "contracts": ["docs/contracts/v1-baseline.md"],
+      "validation": ["python3 -m unittest discover -s tests/qa/db -p 'test_*.py'", "Record four-family count and actual migration/rollback result in the handoff"],
+      "handoff": "harness/handoffs/DB-QA-001.md"
+    },
+    {
+      "id": "BACKEND-BOOT-QA-001",
+      "phase": 1,
+      "title": "Run four-family QA for backend bootstrap",
+      "owner": "qa_tester",
+      "status": "DONE",
+      "depends_on": ["BACKEND-BOOT-001"],
+      "deliverables": [
+        "Backend bootstrap QA package with four families and at least 10 materially different cases per family",
+        "QA handoff with exact commands, results and residual risks"
+      ],
+      "acceptance": "At least 40 deterministic backend-bootstrap cases pass across behavior/component, contract/integration, security/adversarial and E2E/operational families; runtime feature behavior remains deferred.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "tests/AGENTS.md", "backend/AGENTS.md", "backend/pyproject.toml", "backend/app", "backend/tests", "docs/contracts/v1-baseline.md", "docs/testing"],
+        "write_paths": ["tests/qa/backend_boot", "harness/handoffs"],
+        "forbidden_paths": ["backend", "frontend", "infra", "docs/contracts", "harness/tasks/tasks.json", ".env", "data"]
+      },
+      "architecture_blocks": ["02", "17"],
+      "requirements": ["NFR-QA-005"],
+      "contracts": ["docs/contracts/v1-baseline.md"],
+      "validation": ["python3 -m unittest discover -s tests/qa/backend_boot -p 'test_*.py'", "Record four-family count and actual result in the handoff"],
+      "handoff": "harness/handoffs/BACKEND-BOOT-QA-001.md"
+    },
+    {
+      "id": "FRONTEND-BOOT-QA-001",
+      "phase": 1,
+      "title": "Run four-family QA for frontend bootstrap",
+      "owner": "qa_tester",
+      "status": "DONE",
+      "depends_on": ["FRONTEND-BOOT-001"],
+      "deliverables": [
+        "Frontend bootstrap QA package with four families and at least 10 materially different cases per family",
+        "QA handoff with exact commands, results and residual risks"
+      ],
+      "acceptance": "At least 40 deterministic frontend-bootstrap cases pass across behavior/component, contract/integration, security/adversarial and E2E/operational families; product UI behavior remains deferred.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "tests/AGENTS.md", "frontend/AGENTS.md", "frontend/package.json", "frontend/src", "docs/contracts/v1-baseline.md", "docs/design/IMPLEMENTATION-BOUNDARY.md", "docs/testing"],
+        "write_paths": ["tests/qa/frontend_boot", "harness/handoffs"],
+        "forbidden_paths": ["backend", "frontend", "infra", "docs/contracts", "docs/design", "harness/tasks/tasks.json", ".env", "data"]
+      },
+      "architecture_blocks": ["01", "02"],
+      "requirements": ["NFR-QA-005"],
+      "contracts": ["docs/contracts/v1-baseline.md"],
+      "validation": ["python3 -m unittest discover -s tests/qa/frontend_boot -p 'test_*.py'", "Record four-family count and actual result in the handoff"],
+      "handoff": "harness/handoffs/FRONTEND-BOOT-QA-001.md"
+    },
+    {
+      "id": "INFRA-BOOT-QA-001",
+      "phase": 1,
+      "title": "Run four-family QA for disposable PostgreSQL bootstrap",
+      "owner": "qa_tester",
+      "status": "DONE",
+      "depends_on": ["INFRA-BOOT-001"],
+      "deliverables": [
+        "Infrastructure bootstrap QA package with four families and at least 10 materially different cases per family",
+        "QA handoff with exact commands, results and residual risks"
+      ],
+      "acceptance": "At least 40 deterministic infrastructure-bootstrap cases pass across behavior/component, contract/integration, security/adversarial and E2E/operational families; production provisioning remains deferred.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "tests/AGENTS.md", "infra/AGENTS.md", "infra/docker/postgres-test.compose.yml", "docs/database/database.md", "docs/testing"],
+        "write_paths": ["tests/qa/infra_boot", "harness/handoffs"],
+        "forbidden_paths": ["backend", "frontend", "infra", "docs/database", "docs/contracts", "harness/tasks/tasks.json", ".env", "data"]
+      },
+      "architecture_blocks": ["12", "17"],
+      "requirements": ["NFR-QA-005"],
+      "contracts": ["docs/contracts/v1-baseline.md"],
+      "validation": ["python3 -m unittest discover -s tests/qa/infra_boot -p 'test_*.py'", "Record four-family count and actual result in the handoff"],
+      "handoff": "harness/handoffs/INFRA-BOOT-QA-001.md"
+    },
+    {
+      "id": "AUDIT-QA-001",
+      "phase": 1,
+      "title": "Run four-family QA for application telemetry and privacy-safe audit",
+      "owner": "qa_tester",
+      "status": "DONE",
+      "depends_on": ["AUDIT-001"],
+      "deliverables": [
+        "Audit QA package with four families and at least 10 materially different cases per family",
+        "QA handoff with redaction, correlation and append-only evidence"
+      ],
+      "acceptance": "At least 40 deterministic audit/telemetry cases pass across behavior/component, contract/integration, security/adversarial and E2E/operational families; no raw prompt, answer, token, password, PII or restricted conversation body is emitted.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "tests/AGENTS.md", "backend/AGENTS.md", "backend/app/observability", "backend/app/api", "backend/tests", "docs/contracts/events-and-audit.md", "docs/security/data-protection.md", "docs/testing"],
+        "write_paths": ["tests/qa/audit", "harness/handoffs"],
+        "forbidden_paths": ["backend", "frontend", "infra", "docs/contracts", "harness/tasks/tasks.json", ".env", "data"]
+      },
+      "architecture_blocks": ["02", "15"],
+      "requirements": ["NFR-QA-005", "FR-AUD-002", "NFR-DATA-005"],
+      "contracts": ["docs/contracts/events-and-audit.md", "docs/contracts/identity-and-policy.md"],
+      "validation": ["python3 -m unittest discover -s tests/qa/audit -p 'test_*.py'", "Record four-family count and privacy/redaction evidence in the handoff"],
+      "handoff": "harness/handoffs/AUDIT-QA-001.md"
+    },
+    {
+      "id": "INFRA-MONITOR-QA-001",
+      "phase": 1,
+      "title": "Run four-family QA for monitoring platform baseline",
+      "owner": "qa_tester",
+      "status": "DONE",
+      "depends_on": ["INFRA-003"],
+      "deliverables": [
+        "Monitoring QA package with four families and at least 10 materially different cases per family",
+        "QA handoff with syntax, privacy, alert and smoke evidence"
+      ],
+      "acceptance": "At least 40 deterministic monitoring cases pass across behavior/component, contract/integration, security/adversarial and E2E/operational families; no secret or raw restricted content is emitted or stored.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "tests/AGENTS.md", "infra/AGENTS.md", "infra/monitoring", "docs/architecture/blocks/15-observability-audit.md", "docs/contracts/events-and-audit.md", "docs/operations", "docs/testing"],
+        "write_paths": ["tests/qa/monitoring", "harness/handoffs"],
+        "forbidden_paths": ["backend", "frontend", "infra/monitoring", "docs/contracts", "harness/tasks/tasks.json", ".env", "data"]
+      },
+      "architecture_blocks": ["15", "17"],
+      "requirements": ["NFR-QA-005", "NFR-OBS-004", "NFR-DATA-005"],
+      "contracts": ["docs/contracts/events-and-audit.md"],
+      "validation": ["python3 -m unittest discover -s tests/qa/monitoring -p 'test_*.py'", "Record four-family count and configuration/privacy evidence in the handoff"],
+      "handoff": "harness/handoffs/INFRA-MONITOR-QA-001.md"
     }
   ]
 }

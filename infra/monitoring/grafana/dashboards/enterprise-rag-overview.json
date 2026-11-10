@@ -1,0 +1,20 @@
+{
+  "title": "Enterprise Agentic RAG Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "API request rate",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [{"expr": "sum(rate(http_server_request_count[5m]))", "refId": "A"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Authorization denials",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [{"expr": "sum(rate(authorization_denied_total[5m]))", "refId": "A"}]
+    }
+  ]
+}

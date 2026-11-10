@@ -1,12 +1,12 @@
 # Database Architecture V2 — Enterprise Agentic RAG
 
 **Document ID:** DB-ARCH-V2-001  
-**Status:** PROPOSED — design only, pending Project Owner approval  
+**Status:** APPROVED BASELINE — DB-001 migration implementation ready for integration review
 **Version:** 2.0  
 **Date:** 2026-11-09  
 **Target:** PostgreSQL authoritative relational store
 
-> This document is an implementation-ready database design proposal. It does not create migrations, ORM models, RLS policies, queues, or production resources.
+> This document is the approved relational source of truth for DB-001. Alembic migrations implement the authoritative schema; ORM models, RLS runtime policy, queues and production resources remain separate concerns.
 
 ## 1. Scope and decisions
 
@@ -29,19 +29,19 @@ The current product architecture remains:
 - Original files remain in private object storage.
 - Queue, cache/checkpoint store and cloud topology remain separate architecture decisions.
 
-No task status is changed by this document. Current database implementation is not started: migrations, ORM models, repositories and database tests are absent.
+DB-001 now provides the Backend-owned Alembic migration baseline. ORM models, repositories, runtime RLS policy and database QA remain separate implementation/integration concerns.
 
 ## 2. Gap analysis
 
 | Existing component | Current state | Identified gap | Database V2 response |
 |---|---|---|---|
-| backend/app/db/migrations | Only .gitkeep | No schema or migration framework in the repository | Define migration order and constraints without fabricating completed migrations |
+| backend/app/db/migrations | Five ordered Alembic revisions | Migration baseline must remain Backend-owned and reversible | Implement and test migration order, constraints and rollback |
 | Architecture overview | Defines Core, workers, jobs, maintenance and data ownership | No relational ERD or database invariants | Add tenant, job, lifecycle, checkpoint and consistency design |
 | Contracts | Proposal-level identity, document, ingestion, retrieval, cache and audit contracts | No complete relational ownership or composite tenant rules | Map each contract to authoritative tables and constraints |
-| Tasks | ARCH-001 DONE; CONTRACT-001 in integration; DB-001 remains planned | Database work depends on v1.0 contract approval | Keep design proposal separate from implementation completion |
+| Tasks | ARCH-001, CONTRACT-001, DB-001 and DB-QA-001 DONE | Runtime repositories, policy enforcement and RLS remain downstream | Keep migration ownership in Backend and review QA separately |
 | Worker workflows | Async RAG and ingestion flows are documented | No durable job lease, checkpoint, idempotency or outbox model | Add QUERY_JOBS, INGESTION_JOBS, AGENT_EXECUTION_STEPS and OUTBOX_EVENTS |
-| Tests | Only placeholders and guidance | No executable database/integration tests | Define required tests; report them as NOT RUN |
-| Current ERD/database docs | No database/database.md exists | No single source of truth for relational structure | This file is the proposed Database V2 source |
+| Tests | Migration upgrade/rollback evidence and DB-QA-001 evidence exist | Runtime authorization/RLS and full integration still need downstream evidence | Keep migration, schema and security QA reproducible |
+| Current ERD/database docs | This file is the approved relational source | Runtime repositories and policy enforcement are downstream | Keep this file synchronized with Backend-owned revisions |
 
 ## 3. Design principles and security invariants
 
@@ -896,13 +896,13 @@ If the chosen deployment uses one database per tenant, retain tenant_id for sche
 
 ## 11. Migration plan
 
-No migration exists today. The following is a proposed forward-only sequence, not evidence of completed implementation:
+DB-001 implements the following ordered, reversible Alembic sequence under `backend/app/db/migrations/versions`:
 
 1. 001_identity_tenants: TENANTS, USERS, DEPARTMENTS, TENANT_MEMBERSHIPS, ROLES, MEMBERSHIP_ROLES, AUTH_SESSIONS.
 2. 002_documents: DOCUMENTS, DOCUMENT_VERSIONS, DOCUMENT_APPROVALS, DOCUMENT_ACCESS_GRANTS, CHUNKS.
 3. 003_jobs_and_conversations: CONVERSATIONS, MESSAGES, QUERY_JOBS, AGENT_EXECUTION_STEPS, MAINTENANCE_WINDOWS.
 4. 004_audit_and_delivery: AUDIT_EVENTS, OUTBOX_EVENTS, ANSWER_CITATIONS, FEEDBACK.
-5. 005_indexes_and_rls: approved indexes, constraints and RLS policies after testing.
+5. 005_indexes: approved query-path indexes and uniqueness constraints. RLS remains a separate defense-in-depth decision.
 
 Migration rules:
 
@@ -911,7 +911,7 @@ Migration rules:
 - Backfill tenant/membership ownership before enabling composite foreign keys.
 - Validate constraints before making them fully enforced.
 - Do not drop old columns or purge data without an approved retention/backfill plan.
-- Test rollback strategy on disposable environments; do not claim production rollback safety from a document.
+- Upgrade and downgrade have been executed on disposable PostgreSQL. This is not production rollback certification.
 
 ## 12. Testing plan
 
@@ -962,47 +962,46 @@ Current verification status:
 | Check | Status |
 |---|---|
 | Repository inspection | PASS — design files and task dependencies inspected |
-| Database migration execution | NOT RUN — no migration exists |
-| PostgreSQL schema execution | NOT RUN — no schema exists |
+| Database migration execution | PASS — DB-001 upgrade 0001→0005 and downgrade to base |
+| PostgreSQL schema execution | PASS — disposable PostgreSQL execution |
 | RLS test | NOT RUN — no RLS policy exists |
-| Database integration tests | NOT RUN — test directories contain placeholders only |
+| Database integration tests | PASS — DB-QA-001 four-family package, 40 cases |
 | Production readiness | NOT CLAIMED |
 
 ## 13. Remaining implementation risks and approval blockers
 
 1. Tenant scope: current product deployment is single-enterprise, while this schema is multi-tenant-ready. Owner must confirm whether shared multi-tenant runtime is out of MVP while tenant-aware storage remains required.
-2. Policy precedence: v1 contract fixes Chairman, department, role and document-grant precedence; DB-001 must enforce it with tests.
+2. Policy precedence: v1 contract fixes Chairman, department, role and document-grant precedence; AUTH-001 and DB-QA-001 must verify the runtime boundary.
 3. RLS: choose between RLS defense-in-depth, application-only policy, or both; application enforcement is mandatory either way.
-4. Maintenance: v1 contract fixes global chatbot pause, durable owner/fencing and checkpoint/resume semantics; DB-001 must implement and test it.
+4. Maintenance: v1 contract fixes global chatbot pause, durable owner/fencing and checkpoint/resume semantics; runtime integration remains downstream.
 5. Queue: broker, priority fairness and worker concurrency remain implementation/benchmark decisions; PostgreSQL durable jobs remain the MVP authority.
 6. Database technology: PostgreSQL is the target and Alembic is the owner-provided migration-tool proposal; the exact driver and deployment topology remain pending.
 7. Vector/search: Qdrant and lexical index ownership/reconciliation details require an approved contract.
-8. Retention: v1 contract fixes the current baseline retention/legal-hold behavior; DB-001 must implement tombstone and permanent-delete safeguards.
+8. Retention: v1 contract fixes the current baseline retention/legal-hold behavior; DB-QA-001 and later lifecycle tasks must verify tombstone and permanent-delete safeguards.
 9. Feedback: v1 contract fixes one feedback record per membership/message or anonymous session/message.
-10. Active-version head: v2 chooses the dedicated DOCUMENT_HEADS table; DB-001 must implement and test its composite key, fencing and atomic update without weakening the one-active-version invariant.
+10. Active-version head: v2 chooses the dedicated DOCUMENT_HEADS table; DB-QA-001 and KNOW-001 must verify its composite key, fencing and one-active-version invariant.
 
 ## 14. Dependency-aware next steps
 
-1. Owner reviews and approves this Database V2 proposal or records changes.
-2. ARCH-001 finalizes architecture/ADR decisions.
-3. CONTRACT-001 reviews and proposes identity, document, retrieval, job, citation, audit and cross-runtime schemas; the Project Owner approves them.
-4. INFRA-002 produces the cloud/secrets readiness report without creating accounts, keys or paid resources.
-5. DevOps completes INFRA-BOOT-001 to prepare an isolated temporary PostgreSQL service for DB-001 before INFRA-001; it requires no production account or data. Backend defines and tests migrations.
-6. After DB-001 is DONE, INFRA-001 wires the Backend-owned migrations into reproducible development services.
+1. ARCH-001 and CONTRACT-001 are accepted; the v1.0 contract is the migration input.
+2. INFRA-002 remains the cloud/secrets readiness boundary without creating accounts, keys or paid resources.
+3. INFRA-BOOT-001 provides the isolated temporary PostgreSQL service; DB-001 defines and executes the Backend-owned migrations.
+4. DB-QA-001 completed the four-family schema/migration QA package; DB-001 is DONE.
+5. INFRA-001 wires the Backend-owned migrations into reproducible development services; its implementation and QA are DONE.
 7. KNOW-001 adds document/version/chunk models and ACL inheritance tests. Any later schema changes require a new Backend-owned migration task; DB-001 remains a completed historical task.
 8. AUTH-001 adds policy enforcement against the approved membership/grant model.
 9. ING-001 adds quarantine-to-ACTIVE processing and vector reconciliation.
-10. Add integration/security tests before marking the database tasks DONE.
+10. Keep application authorization, RLS and production rollback evidence in their owning downstream tasks.
 
 ## 15. Change summary
 
 ### Created
 
-- database/database.md — this proposed Database Architecture V2.
+- database/database.md — approved Database Architecture V2 and relational source of truth.
 
 ### Modified
 
-- None.
+- DB-001 added the Backend-owned Alembic migration baseline and disposable execution evidence.
 
 ### Tables introduced by this design
 
@@ -1031,13 +1030,11 @@ Current verification status:
 
 ### Not introduced
 
-- No PostgreSQL migration.
 - No ORM model.
 - No database repository/service.
 - No Qdrant schema change.
 - No queue deployment.
-- No task-status update.
-- No production claim.
+- No production deployment or RLS rollout claim.
 
 ## 16. Owner-provided database alignment
 

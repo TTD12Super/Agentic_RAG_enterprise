@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: enterprise_rag_test
+      POSTGRES_USER: enterprise_rag_test
+      POSTGRES_PASSWORD: synthetic_only_not_secret
+    ports:
+      - "127.0.0.1:55432:5432"
+    networks:
+      - postgres_test
+    tmpfs:
+      - /var/lib/postgresql/data
+    shm_size: 128m
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U enterprise_rag_test -d enterprise_rag_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+networks:
+  postgres_test:
+    # Project-scoped bridge network; host access is still loopback-only.
