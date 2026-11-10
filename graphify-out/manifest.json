@@ -2528,6 +2528,42 @@
     "ast_hash": "c6385e87fdbc81887ef83e958ba1e83a",
     "semantic_hash": ""
   },
+  "tests/evaluation/eval_001_runner.py": {
+    "mtime": 1794320971.1629643,
+    "seen": 1794321033.425548,
+    "ast_hash": "fbd46490e179ce3a089a33aca193b3b1",
+    "semantic_hash": ""
+  },
+  "tests/evaluation/run_eval_001.py": {
+    "mtime": 1794320754.4717205,
+    "seen": 1794321033.42555,
+    "ast_hash": "67df0bf732b3f35341d7d7922a098977",
+    "semantic_hash": ""
+  },
+  "tests/evaluation/test_eval_001_runtime.py": {
+    "mtime": 1794320861.3491938,
+    "seen": 1794321033.425556,
+    "ast_hash": "03826f8d82af559046c1644ccb9abb12",
+    "semantic_hash": ""
+  },
+  "docs/testing/eval-001-report.md": {
+    "mtime": 1794321006.8758595,
+    "seen": 1794321033.4258409,
+    "ast_hash": "effaba4891f464a4d3f100b2912879f6",
+    "semantic_hash": ""
+  },
+  "harness/handoffs/EVAL-001.md": {
+    "mtime": 1794320934.3836396,
+    "seen": 1794321033.425892,
+    "ast_hash": "1007fd6558c49f41c1c1af8212e2af6b",
+    "semantic_hash": ""
+  },
+  "harness/reviews/EVAL-001-main-review.md": {
+    "mtime": 1794320934.3840609,
+    "seen": 1794321033.4259431,
+    "ast_hash": "cb8e98791c7779afc6f178c01398a91f",
+    "semantic_hash": ""
+  },
   "frontend/package-lock.json": {
     "mtime": 1794283564.6723778,
     "seen": 1794299699.463474,

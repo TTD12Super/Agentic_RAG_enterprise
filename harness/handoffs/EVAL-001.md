@@ -1,0 +1,45 @@
+# Handoff — EVAL-001 / QA Agent
+
+- Task ID: EVAL-001
+- Agent owner: qa_tester
+- Status: READY_FOR_INTEGRATION
+- Contract version(s) used: retrieval v1.0; answer-and-citation v1.0; identity-and-policy v1.0; events-and-audit v1.0
+- Upstream dependencies checked: RAG-002, EVID-001, GUARD-001, EVAL-PREP-001 and ANSWER-BASE-001 are `DONE` in the task registry.
+- Changed files:
+  - `tests/evaluation/eval_001_runner.py`
+  - `tests/evaluation/run_eval_001.py`
+  - `tests/evaluation/test_eval_001_runtime.py`
+  - `docs/testing/eval-001-report.md`
+  - `harness/handoffs/EVAL-001.md`
+  - `harness/reviews/EVAL-001-main-review.md`
+- New/updated tests:
+  - Existing EVAL-PREP four families executed: behavior/component 10, contract/integration 10, security/adversarial 10, E2E/operational 10 materially different cases.
+  - Added 11 runtime cases covering 200-record V1–V3 execution, deterministic repeatability, citation/version/tenant binding, permission-negative no-leakage, unanswerable, empty input, model error, and explicit V4 NOT RUN handling.
+  - Existing authorization/guardrail suites also ran.
+- Commands actually executed + exit status:
+  - `/tmp/know-venv/bin/python -m pytest --import-mode=importlib tests/evaluation tests/security` → PASS, 72 passed, exit 0.
+  - `PYTHONPATH=. /tmp/know-venv/bin/python tests/evaluation/run_eval_001.py` → PASS, report written, exit 0.
+  - `/tmp/know-venv/bin/python -m pytest --import-mode=importlib backend/tests/test_dense_retrieval.py backend/tests/test_hybrid_retrieval.py backend/tests/test_evidence.py` → PASS, 16 passed, exit 0.
+  - `/tmp/know-venv/bin/python scripts/validate_harness.py` → PASS, 17 blocks, 8 agents, 41 tasks, no dependency cycles; scaffolding only.
+- Evaluation result:
+  - Synthetic dataset: 200 records; 140 Vietnamese/60 English; 140 simple/60 complex; 50 permission-negative; 24 cross-tenant; 30 unanswerable.
+  - V1 dense-only, V2 dense+BM25+RRF, V3 deterministic reranker: 200 cases each; Recall@10, nDCG@10, MRR, citation accuracy, answer correctness and no-answer accuracy all 1.0000; unauthorized retrieval rate 0.0000; repeatability true.
+  - These 1.0000 values are an isolated synthetic upper-bound smoke result, not provider or production quality evidence.
+  - V4 parent-child: NOT RUN. Current backend exposes parent/child metadata and ACL inheritance but no parent-expansion runtime seam.
+- Security implications (ACL, tenant, PII, injections, tools):
+  - V1–V3 returned zero forbidden-source leakage across the synthetic permission-negative/cross-tenant corpus.
+  - Denied/restricted retrieval is invisible and maps to safe `INSUFFICIENT_EVIDENCE`; no source/citation/fact is returned.
+  - Existing backend/evidence tests cover revoked/stale versions; existing EVAL-PREP tests cover indirect injection labels and read-only tool expectations.
+  - No real PII, proprietary documents, provider credentials or production data were used.
+- Integration steps:
+  - Main Agent should review the report and decide whether to schedule a backend task for V4 parent expansion and citation contract completion.
+  - Re-run the exact commands after any retriever/evidence changes.
+  - Keep proposed quality/latency/cost thresholds labelled `PROPOSED/PENDING_PROJECT_OWNER_APPROVAL`.
+- Known limitations / blockers with IDs:
+  - `EVAL-001-V4-NO-SEAM`: V4 has no callable parent-expansion implementation; no invented metrics were recorded.
+  - `EVAL-001-CITATION-SCHEMA-GAP`: `AnswerCitation` does not expose tenant/policy epoch or DOCX/XLSX type-specific locators required by the broader citation contract; report includes reproducer scope. No backend fix made.
+  - Provider token/cost and external-provider latency are not measured because no approved provider/API key is configured.
+- Suggested next READY task: backend-owned V4 parent-expansion integration plus citation schema review; then rerun EVAL-001 with approved provider configuration.
+- Human approval required: Project Owner approval for Golden Dataset acceptance thresholds, production gates, provider/model choice and V4 scope. Main Agent must review this handoff; QA does not mark the task DONE.
+
+No task registry change, commit or push was performed.
