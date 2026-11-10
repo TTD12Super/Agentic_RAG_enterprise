@@ -36,7 +36,11 @@ The 1.0000 quality values are a deterministic upper-bound smoke result: each ans
 
 ## Thresholds and limitations
 
-The documented Recall/citation/answer/no-answer/latency/cost gates are **PROPOSED/PENDING_PROJECT_OWNER_APPROVAL**. This run does not approve or reject them.
+Recall@10 ≥90% and the calibrated answer-confidence floor of 80% were
+approved by the Project Owner on 2026-11-10. The remaining citation,
+answer-correctness, no-answer, latency and cost gates are
+**PROPOSED/PENDING_PROJECT_OWNER_APPROVAL**. This run does not approve or
+reject those remaining gates.
 
 - Provider token/cost and external-provider latency are **NOT MEASURED**; local deterministic timings are not production performance claims.
 - V4 is **NOT RUN** because parent expansion is documented but not exposed as a runtime retriever seam. Implementing it is outside this QA task and would require a backend owner decision.

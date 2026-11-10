@@ -20,6 +20,7 @@
 - Security negative tests: 100% pass for the defined suite.
 - Cross-tenant leakage and unauthorized retrieval: zero.
 - Citation correctness: at least 95%; retrieval Recall@10: at least 90%; answer correctness and no-answer accuracy: at least 90%.
+- Calibrated answer confidence: at least 80% to release an answer; below 80% must abstain with `INSUFFICIENT_EVIDENCE`.
 - p95 latency target at peak profile: simple ≤30 seconds, complex ≤90 seconds; measure queue, maintenance and processing time separately.
 - API/job error rate target is below 1%, excluding deliberate 429/503 overload protection but reporting those separately.
 - Cost target is at most $0.05/simple and $0.20/complex.

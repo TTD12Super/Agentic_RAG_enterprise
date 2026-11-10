@@ -8,11 +8,14 @@ For each version record Recall@5, nDCG@10, MRR, citation accuracy, answer ground
 
 Gold data structure: query, tenant, principal/role/scope fixture, expected authorized source span(s), expected answer/abstention, security category. Keep confidential corpora out of tests; use synthetic fixtures.
 
-Avoid interpreting similarity/rerank scores as calibrated probabilities. Require evidence-backed acceptance thresholds approved by project owner after baseline measurements.
+Avoid interpreting similarity/rerank scores as calibrated probabilities. Answer
+confidence must come from a calibrated backend scorer; never trust a model's
+self-reported confidence as the release decision.
 
 ## Owner-provided proposal targets
 
 - Golden Dataset: at least 200 cases; 70% Vietnamese and 30% English; 70% simple and 30% complex; at least 50 permission-negative and 30 unanswerable cases, with overlap allowed.
+- Owner decision recorded 2026-11-10: Recall@10 ≥90% is accepted as the retrieval gate. An answer may be released only when calibrated answer confidence is ≥80%; below 80% the system returns `INSUFFICIENT_EVIDENCE`.
 - Proposed thresholds: Recall@10 ≥90%, citation accuracy ≥95%, citation grounding precision ≥95%, answer correctness ≥90%, no-answer accuracy ≥90% and zero unauthorized retrieval/cross-tenant leakage.
 - Proposed load target: p95 simple ≤30 seconds and complex ≤90 seconds at the Q33 profile (500 active sessions, 30 queries/minute sustained, 60 queries/minute burst).
 - Cost targets are ≤$0.05/simple and ≤$0.20/complex. These values are targets, not production SLAs, until the selected provider and benchmark are approved.

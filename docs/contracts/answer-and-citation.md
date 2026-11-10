@@ -21,4 +21,8 @@ Allowed status: ANSWERED, PARTIAL, INSUFFICIENT_EVIDENCE, ACCESS_DENIED, ERROR.
 - Answer in the user's language unless explicitly requested otherwise.
 - For conflicting sources, prefer approved/effective authoritative material and the newest ACTIVE version; if conflict remains, disclose both sources.
 - Partial evidence produces a qualified partial answer; no sufficient evidence produces `INSUFFICIENT_EVIDENCE`.
+- The approved answer-confidence floor is 80%: a calibrated backend confidence
+  below 80% must produce `INSUFFICIENT_EVIDENCE` rather than an answer. Retrieval
+  similarity, reranker score, or model self-report is not itself a confidence
+  probability.
 - Citation details are collapsed by default but a visible source indicator remains available. Preview and download recheck current authorization.

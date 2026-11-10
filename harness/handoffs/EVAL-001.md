@@ -34,12 +34,12 @@
 - Integration steps:
   - Main Agent should review the report and decide whether to schedule a backend task for V4 parent expansion and citation contract completion.
   - Re-run the exact commands after any retriever/evidence changes.
-  - Keep proposed quality/latency/cost thresholds labelled `PROPOSED/PENDING_PROJECT_OWNER_APPROVAL`.
+  - Recall@10 ≥90% and the calibrated answer-confidence floor of 80% are approved; keep the remaining quality/latency/cost thresholds labelled `PROPOSED/PENDING_PROJECT_OWNER_APPROVAL`.
 - Known limitations / blockers with IDs:
   - `EVAL-001-V4-NO-SEAM`: V4 has no callable parent-expansion implementation; no invented metrics were recorded.
   - `EVAL-001-CITATION-SCHEMA-GAP`: `AnswerCitation` does not expose tenant/policy epoch or DOCX/XLSX type-specific locators required by the broader citation contract; report includes reproducer scope. No backend fix made.
   - Provider token/cost and external-provider latency are not measured because no approved provider/API key is configured.
 - Suggested next READY task: backend-owned V4 parent-expansion integration plus citation schema review; then rerun EVAL-001 with approved provider configuration.
-- Human approval required: Project Owner approval for Golden Dataset acceptance thresholds, production gates, provider/model choice and V4 scope. Main Agent must review this handoff; QA does not mark the task DONE.
+- Human approval required: Project Owner approval for the remaining Golden Dataset acceptance thresholds, production gates, provider/model choice and V4 scope. Main Agent must review this handoff; QA does not mark the task DONE.
 
 No task registry change, commit or push was performed.
