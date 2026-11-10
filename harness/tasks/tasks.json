@@ -529,7 +529,7 @@
       "phase": 3,
       "title": "Implement permission-aware dense retrieval baseline",
       "owner": "rag_engineer",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "ING-001",
         "AUTH-001"

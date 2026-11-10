@@ -266,9 +266,9 @@
     "ast_empty": true
   },
   "harness/tasks/tasks.json": {
-    "mtime": 1794304604.8873324,
-    "seen": 1794304658.681569,
-    "ast_hash": "aacafca96e82311d29ac1cb1126ce942",
+    "mtime": 1794305571.5690114,
+    "seen": 1794305579.8381178,
+    "ast_hash": "edc126100341eb95bcda3d7096bcf732",
     "semantic_hash": ""
   },
   "infra/docker/development.compose.yml": {
@@ -2160,6 +2160,66 @@
     "mtime": 1794304635.0808814,
     "seen": 1794304658.681737,
     "ast_hash": "82fdc82679b9f855a04935d3b3c5e3cd",
+    "semantic_hash": ""
+  },
+  "backend/app/rag/__init__.py": {
+    "mtime": 1794304955.5585246,
+    "seen": 1794305579.838094,
+    "ast_hash": "7aa556dbaf2314a82a1174cf8b88fa9f",
+    "semantic_hash": ""
+  },
+  "backend/app/rag/dense.py": {
+    "mtime": 1794305085.8804593,
+    "seen": 1794305579.8380952,
+    "ast_hash": "332127d886aa03e88351d7f8e607e651",
+    "semantic_hash": ""
+  },
+  "backend/tests/test_dense_retrieval.py": {
+    "mtime": 1794305092.7818952,
+    "seen": 1794305579.838102,
+    "ast_hash": "abe6f476e2b2a8779c06c27ca3205c29",
+    "semantic_hash": ""
+  },
+  "tests/qa/rag/test_behavior_component.py": {
+    "mtime": 1794305480.3508463,
+    "seen": 1794305579.838185,
+    "ast_hash": "7d2f9afb38d052fda7c946ccf2bb9e83",
+    "semantic_hash": ""
+  },
+  "tests/qa/rag/test_contract_integration.py": {
+    "mtime": 1794305480.3515904,
+    "seen": 1794305579.838186,
+    "ast_hash": "35388ee8488bc51d8f67076ba6b11fbc",
+    "semantic_hash": ""
+  },
+  "tests/qa/rag/test_e2e_operational.py": {
+    "mtime": 1794305424.4090528,
+    "seen": 1794305579.838186,
+    "ast_hash": "31c02476773e159c61dab3dbf6f29fc9",
+    "semantic_hash": ""
+  },
+  "tests/qa/rag/test_security_adversarial.py": {
+    "mtime": 1794305461.7213511,
+    "seen": 1794305579.838187,
+    "ast_hash": "56b2bdab32a06f458f637a3cd160daa0",
+    "semantic_hash": ""
+  },
+  "harness/handoffs/RAG-001.md": {
+    "mtime": 1794305571.5696983,
+    "seen": 1794305579.838281,
+    "ast_hash": "1a36b2cc32de96436385755f1fbbce33",
+    "semantic_hash": ""
+  },
+  "harness/handoffs/RAG-QA-001.md": {
+    "mtime": 1794305542.1627626,
+    "seen": 1794305579.8382819,
+    "ast_hash": "67e0dd0d596b2961bedb5bb450ef98cd",
+    "semantic_hash": ""
+  },
+  "harness/reviews/RAG-001-main-review.md": {
+    "mtime": 1794305571.5699754,
+    "seen": 1794305579.838293,
+    "ast_hash": "ab4a10a9119aba7e1fb2e1fab4831872",
     "semantic_hash": ""
   },
   "frontend/package-lock.json": {
