@@ -509,7 +509,7 @@
       "phase": 2,
       "title": "Implement document and account administration APIs",
       "owner": "backend",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": ["ING-001", "IDENT-001", "AUTH-001", "DB-001"],
       "deliverables": ["Versioned document and account administration API routes integrated with identity, policy, ingestion and audit", "Real API and permission-negative integration tests"],
       "acceptance": "Authorized managers can perform approved account and document workflows through the Backend API; Chairman, employees and anonymous users are denied management actions; two-review, ACL and revocation tests pass against real integrations. Cross-user conversation endpoint privacy is tested after CHAT-001 exists.",

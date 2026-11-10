@@ -1,17 +1,15 @@
 # Graph Report - enterprise-agentic-rag-harness  (2026-11-10)
 
 ## Corpus Check
-- 169 files · ~153,514 words
-- Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 68 file(s) not represented in the graph (top: (none) 53, .toml 9, .example 2)
+- cluster-only mode — file stats not available
 
 ## Summary
-- 1878 nodes · 4364 edges · 98 communities (60 shown, 38 thin omitted)
-- Extraction: 84% EXTRACTED · 16% INFERRED · 0% AMBIGUOUS · INFERRED: 695 edges (avg confidence: 0.88)
+- 2074 nodes · 5223 edges · 112 communities (62 shown, 50 thin omitted)
+- Extraction: 87% EXTRACTED · 13% INFERRED · 0% AMBIGUOUS · INFERRED: 695 edges (avg confidence: 0.87)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `dc632ed4`
+- Built from commit: `1c881252`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -30,7 +28,7 @@
 - env.py
 - identity.py
 - AuthorizationEvaluator
-- InMemoryIdentityStore
+- AuthenticatedPrincipal
 - postgres
 - postgres
 - authorization/test_behavior_component.py
@@ -49,14 +47,14 @@
 - test_authorization.py
 - _evaluation_harness.py
 - GraphifyOperationalTests
-- InMemoryAuditSink
+- auth
 - E2EOperationalTests
 - steps
 - BehaviorComponentTests
 - ContractIntegrationTests
 - SecurityAdversarialTests
 - rules
-- subprocess
+- ProviderPolicy
 - read
 - read
 - eslint.config.js
@@ -72,12 +70,12 @@
 - dependencies
 - vitest
 - scripts
-- os
-- KnowledgeContractIntegrationTests
+- pytest
+- admin.py
 - main.py
 - load_validated_records
-- service.py
-- pytest
+- AuthenticationService
+- BackendBootstrapContractTests
 - EgressMode
 - vite-env.d.ts
 - sync_graph.sh
@@ -86,51 +84,56 @@
 - model/test_e2e_operational.py
 - pytest
 - lifecycle.py
-- test_identity.py
-- ProviderPolicy
 - ModelProviderError
-- identity/models.py
+- context.py
+- os
+- test_identity.py
+- IdentityBehaviorTests
+- IdentityContractTests
+- IdentitySecurityTests
+- InMemoryIdentityStore
+- identity/_baseline.py
 
 ## God Nodes (most connected - your core abstractions)
-1. `new_service()` - 85 edges
-2. `DataClassification` - 67 edges
-3. `IngestionService` - 48 edges
-4. `ModelGateway` - 46 edges
-5. `ChunkMetadata` - 45 edges
-6. `make_manifest()` - 43 edges
-7. `section()` - 42 edges
-8. `active()` - 36 edges
-9. `AuthenticatedPrincipal` - 36 edges
-10. `inherit_acl()` - 35 edges
+1. `auth()` - 87 edges
+2. `request()` - 86 edges
+3. `new_service()` - 85 edges
+4. `DataClassification` - 68 edges
+5. `key()` - 62 edges
+6. `ChunkMetadata` - 51 edges
+7. `IngestionService` - 49 edges
+8. `ModelGateway` - 46 edges
+9. `AuthenticatedPrincipal` - 43 edges
+10. `make_manifest()` - 43 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `test_mvp_accepts_only_pdf_docx_and_xlsx()` --calls--> `make_manifest()`  [INFERRED]
-  tests/qa/ingestion/test_contract_integration.py → backend/tests/_ingestion_fixtures.py
-- `ScriptedEmbedding` --uses--> `ModelProviderError`  [INFERRED]
-  tests/qa/model/_baseline.py → backend/app/integrations/model_gateway.py
-- `ScriptedReranker` --uses--> `ModelProviderError`  [INFERRED]
-  tests/qa/model/_baseline.py → backend/app/integrations/model_gateway.py
-- `test_fallback_is_attempted_once()` --uses--> `ModelUnavailable`  [INFERRED]
-  tests/qa/model/test_e2e_operational.py → backend/app/integrations/model_gateway.py
-- `test_primary_attempts_are_bounded()` --uses--> `ModelUnavailable`  [INFERRED]
-  tests/qa/model/test_e2e_operational.py → backend/app/integrations/model_gateway.py
+- `AuthorizationSecurityAdversarialTests` --uses--> `AuthenticatedPrincipal`  [INFERRED]
+  tests/qa/authorization/test_security_adversarial.py → backend/app/identity/models.py
+- `test_unknown_classification_and_noncanonical_principal_are_denied()` --uses--> `AuthenticatedPrincipal`  [INFERRED]
+  tests/security/test_authorization.py → backend/app/identity/models.py
+- `test_embedding_gateway_contract_passes_request_route_and_timeout()` --uses--> `EmbeddingRequest`  [INFERRED]
+  tests/qa/model/test_contract_integration.py → backend/app/models/adapters.py
+- `ScriptedEmbedding` --uses--> `EmbeddingResult`  [INFERRED]
+  tests/qa/model/_baseline.py → backend/app/models/adapters.py
+- `ScriptedReranker` --uses--> `RerankerResult`  [INFERRED]
+  tests/qa/model/_baseline.py → backend/app/models/adapters.py
 
 ## Import Cycles
-- None detected.
+- 2-file cycle: `backend/app/api/admin.py -> backend/app/api/identity.py -> backend/app/api/admin.py`
 
-## Communities (98 total, 38 thin omitted)
+## Communities (112 total, 50 thin omitted)
 
 ### Community 0 - "audit.py"
 Cohesion: 0.09
-Nodes (16): append_audit_event(), AuditEvent, AuditSink, AuditSinkUnavailable, InMemoryAuditSink, redact_metadata(), _safe_code(), _safe_identifier() (+8 more)
+Nodes (18): append_audit_event(), AuditEvent, AuditSink, AuditSinkUnavailable, InMemoryAuditSink, redact_metadata(), _safe_code(), _safe_identifier() (+10 more)
 
 ### Community 1 - "compose"
 Cohesion: 0.05
 Nodes (13): get_settings(), Settings, compose(), compose_config_result(), database(), handoff(), read(), tasks() (+5 more)
 
 ### Community 2 - "read"
-Cohesion: 0.06
-Nodes (7): migration_files(), migration_text(), read(), DatabaseBaselineBehaviorTests, DatabaseBaselineContractTests, DatabaseBaselineOperationalTests, DatabaseBaselineSecurityTests
+Cohesion: 0.05
+Nodes (10): compose_config_result(), migration_files(), migration_text(), read(), task(), tasks(), DatabaseBaselineBehaviorTests, DatabaseBaselineContractTests (+2 more)
 
 ### Community 3 - "read"
 Cohesion: 0.06
@@ -169,16 +172,16 @@ Cohesion: 0.09
 Nodes (3): _database_url(), run_migrations_offline(), run_migrations_online()
 
 ### Community 13 - "identity.py"
-Cohesion: 0.18
-Nodes (10): _bearer_token(), current_identity(), _record(), _record_identity_error(), _request_context(), sign_in(), sign_out(), SignInRequest (+2 more)
+Cohesion: 0.27
+Nodes (9): _bearer_token(), current_identity(), _record(), _record_identity_error(), _request_context(), sign_in(), sign_out(), SignInRequest (+1 more)
 
 ### Community 14 - "AuthorizationEvaluator"
-Cohesion: 0.12
-Nodes (6): AccessGrant, AnonymousPrincipal, AuthorizationEvaluator, _normalize_action(), PolicyStore, AuthenticatedPrincipal
+Cohesion: 0.10
+Nodes (12): AccessGrant, Action, AnonymousPrincipal, AuthorizationEvaluator, Classification, Decision, DocumentResource, Effect (+4 more)
 
-### Community 15 - "InMemoryIdentityStore"
+### Community 15 - "AuthenticatedPrincipal"
 Cohesion: 0.11
-Nodes (6): IdentityRecord, normalize_roles(), hash_secret(), InMemoryIdentityStore, verify_secret(), test_noncanonical_role_cannot_create_identity()
+Nodes (8): AuthenticatedPrincipal, Role, utc_z(), IdentityErrorPassthrough, now_utc(), hash_secret(), verify_secret(), test_principal_rejects_extra_client_claims()
 
 ### Community 16 - "postgres"
 Cohesion: 0.10
@@ -189,56 +192,56 @@ Cohesion: 0.10
 Nodes (20): POSTGRES_DB, POSTGRES_PASSWORD, POSTGRES_USER, interval, retries, test, timeout, networks (+12 more)
 
 ### Community 18 - "authorization/test_behavior_component.py"
-Cohesion: 0.38
-Nodes (4): AuthorizationBehaviorTests, document(), evaluator(), principal()
+Cohesion: 0.32
+Nodes (5): ConversationResource, AuthorizationBehaviorTests, document(), evaluator(), principal()
 
 ### Community 19 - "package.json"
 Cohesion: 0.13
 Nodes (19): devDependencies, eslint@9.17.0, jsdom@25.0.1, @types/node@22.10.5, @types/react@18.3.18, @types/react-dom@18.3.5, typescript@5.7.2, engines (+11 more)
 
 ### Community 20 - "model/_baseline.py"
-Cohesion: 0.14
-Nodes (12): EmbeddingAdapter, EmbeddingRequest, EmbeddingResult, RerankerAdapter, RerankerRequest, RerankerResult, ModelRoute, test_embedding_request_rejects_blank_text() (+4 more)
+Cohesion: 0.16
+Nodes (8): EmbeddingAdapter, EmbeddingRequest, EmbeddingResult, RerankerAdapter, RerankerResult, ModelRoute, test_embedding_request_rejects_blank_text(), test_embedding_request_requires_texts()
 
 ### Community 21 - "InMemoryPolicyStore"
 Cohesion: 0.30
 Nodes (5): InMemoryPolicyStore, AuthorizationSecurityAdversarialTests, document(), evaluator(), principal()
 
 ### Community 22 - "ChunkMetadata"
-Cohesion: 0.13
-Nodes (12): ChunkMetadata, DocumentMetadata, _ImmutableModel, SourceSpan, test_active_chunk_requires_acl_metadata(), test_chunk_accepts_source_provenance(), test_chunk_rejects_reversed_pages(), test_chunk_rejects_self_parent() (+4 more)
+Cohesion: 0.12
+Nodes (11): ChunkMetadata, DocumentMetadata, _ImmutableModel, test_active_chunk_requires_acl_metadata(), test_chunk_accepts_source_provenance(), test_chunk_rejects_reversed_pages(), test_chunk_rejects_self_parent(), test_document_metadata_is_tenant_scoped() (+3 more)
 
 ### Community 23 - "compilerOptions"
 Cohesion: 0.11
 Nodes (18): compilerOptions, allowJs, allowSyntheticDefaultImports, esModuleInterop, forceConsistentCasingInFileNames, isolatedModules, jsx, lib (+10 more)
 
 ### Community 24 - "DocumentVersionMetadata"
-Cohesion: 0.10
+Cohesion: 0.09
 Nodes (8): DocumentVersionMetadata, test_document_version_identity_is_stable(), test_document_version_requires_private_source(), test_hashes_are_normalized(), test_version_contract_has_immutable_version_number(), test_version_contract_supports_publication_states(), make_document(), KnowledgeBehaviorTests
 
 ### Community 25 - "inherit_acl"
-Cohesion: 0.29
-Nodes (4): inherit_acl(), make_child(), make_parent(), KnowledgeSecurityAdversarialTests
+Cohesion: 0.19
+Nodes (5): make_child(), make_parent(), make_version(), KnowledgeContractIntegrationTests, KnowledgeSecurityAdversarialTests
 
 ### Community 26 - "json"
-Cohesion: 0.10
-Nodes (9): dfs(), test_dashboard_has_api_and_security_panels(), test_dashboard_is_valid_json(), tasks(), task(), tasks(), tasks(), tasks() (+1 more)
+Cohesion: 0.08
+Nodes (7): dfs(), test_dashboard_has_api_and_security_panels(), test_dashboard_is_valid_json(), tasks(), compose_config(), tasks(), dashboard()
 
 ### Community 27 - "authorization/test_contract_integration.py"
-Cohesion: 0.23
-Nodes (5): DocumentResource, AuthorizationContractIntegrationTests, document(), evaluator(), principal()
+Cohesion: 0.27
+Nodes (4): AuthorizationContractIntegrationTests, document(), evaluator(), principal()
 
 ### Community 28 - "PolicyEnforcementPoint"
 Cohesion: 0.29
 Nodes (5): PolicyEnforcementPoint, AuthorizationOperationalTests, document(), evaluator(), principal()
 
 ### Community 29 - "BackendBootstrapBehaviorTests"
-Cohesion: 0.10
-Nodes (9): assignment(), calls(), function(), literal(), pyproject(), route_calls(), route_path(), tree() (+1 more)
+Cohesion: 0.15
+Nodes (5): assignment(), calls(), function(), literal(), BackendBootstrapBehaviorTests
 
 ### Community 30 - "test_models.py"
-Cohesion: 0.17
-Nodes (41): ModelGateway, DataClassification, ModelTask, FakeEmbedding, policy(), provider(), route(), test_approved_local_fallback_can_handle_internal_data() (+33 more)
+Cohesion: 0.16
+Nodes (44): ModelGateway, DataClassification, EgressMode, ModelTask, FakeEmbedding, policy(), provider(), route() (+36 more)
 
 ### Community 31 - "test_authorization.py"
 Cohesion: 0.40
@@ -249,12 +252,12 @@ Cohesion: 0.31
 Nodes (9): citation_accuracy(), evaluate_case(), mean_reciprocal_rank(), ndcg_at_k(), recall_at_k(), source_key(), validate_dataset(), validate_record() (+1 more)
 
 ### Community 33 - "GraphifyOperationalTests"
-Cohesion: 0.14
-Nodes (5): graph(), graphify_bin(), run_graphify(), GraphifyOperationalTests, run_graph_query()
-
-### Community 34 - "InMemoryAuditSink"
 Cohesion: 0.17
-Nodes (7): test_healthz_is_local_liveness_only(), test_identity_requires_bearer_credentials(), _add_identity(), _request(), test_sign_in_denial_emits_no_credentials_or_body(), test_sign_in_emits_correlated_success_event(), test_sign_in_fails_closed_when_audit_sink_is_unavailable()
+Nodes (4): graph(), graphify_bin(), run_graphify(), GraphifyOperationalTests
+
+### Community 34 - "auth"
+Cohesion: 0.05
+Nodes (103): ScanReport, ScanVerdict, SourceSpan, add_user(), auth(), key(), prepare_review_two(), publish() (+95 more)
 
 ### Community 35 - "E2EOperationalTests"
 Cohesion: 0.14
@@ -268,13 +271,13 @@ Nodes (12): jobs, validate, name, on, pull_request, workflow_dispatch, run, uses
 Cohesion: 0.17
 Nodes (11): runbook, summary, groups, name, rules, severity, alert, annotations (+3 more)
 
+### Community 41 - "ProviderPolicy"
+Cohesion: 0.13
+Nodes (7): RerankerRequest, route(), ProviderPolicy, test_reranker_request_rejects_blank_document_fields(), test_reranker_request_requires_documents(), test_reranker_request_requires_query(), test_reranker_gateway_contract_passes_request_route_and_timeout()
+
 ### Community 42 - "read"
 Cohesion: 0.11
-Nodes (6): backend_boot_task(), compile_sources_without_writes(), read(), task_packet(), BackendBootstrapContractTests, BackendBootstrapOperationalTests
-
-### Community 43 - "read"
-Cohesion: 0.05
-Nodes (6): read(), task(), IdentityBehaviorTests, IdentityContractTests, IdentityOperationalTests, IdentitySecurityTests
+Nodes (9): backend_boot_task(), compile_sources_without_writes(), pyproject(), read(), route_calls(), route_path(), task_packet(), tree() (+1 more)
 
 ### Community 44 - "eslint.config.js"
 Cohesion: 0.18
@@ -289,8 +292,8 @@ Cohesion: 0.26
 Nodes (11): migration_text(), test_existing_db_contract_has_active_index_guard(), test_existing_db_contract_has_chunks_table(), test_existing_db_contract_has_composite_parent_fk(), test_existing_db_contract_has_document_versions_table(), test_existing_db_contract_has_documents_table(), test_existing_db_contract_has_immutable_version_uniqueness(), test_existing_db_contract_has_private_source_constraint() (+3 more)
 
 ### Community 48 - "test_knowledge_security.py"
-Cohesion: 0.38
-Nodes (12): make_child(), make_parent(), test_conflicting_child_acl_is_denied(), test_document_mismatch_is_denied(), test_matching_child_acl_is_preserved(), test_missing_child_acl_is_inherited(), test_qdrant_projection_does_not_claim_authority(), test_qdrant_projection_keeps_tenant_boundary() (+4 more)
+Cohesion: 0.37
+Nodes (13): inherit_acl(), make_child(), make_parent(), test_conflicting_child_acl_is_denied(), test_document_mismatch_is_denied(), test_matching_child_acl_is_preserved(), test_missing_child_acl_is_inherited(), test_qdrant_projection_does_not_claim_authority() (+5 more)
 
 ### Community 49 - "to_qdrant_payload"
 Cohesion: 0.39
@@ -309,8 +312,8 @@ Cohesion: 0.22
 Nodes (8): global, evaluation_interval, scrape_interval, rule_files, scrape_configs, job_name, static_configs, targets
 
 ### Community 53 - "AuthorizationDenied"
-Cohesion: 0.15
-Nodes (10): Action, AuthorizationDenied, deny(), Classification, ConversationResource, Decision, Effect, PolicyDecision (+2 more)
+Cohesion: 0.28
+Nodes (3): AuthorizationDenied, deny(), PolicyDecision
 
 ### Community 54 - "dependencies"
 Cohesion: 0.29
@@ -324,21 +327,25 @@ Nodes (6): @testing-library/jest-dom@6.6.3, @testing-library/react@16.1.0, vites
 Cohesion: 0.25
 Nodes (8): scripts, build, dev, lint, preview, test, test:watch, typecheck
 
-### Community 61 - "service.py"
-Cohesion: 0.13
-Nodes (6): rate_limited(), SessionRecord, AuthenticationService, IdentityErrorPassthrough, now_utc(), IdentityStore
-
-### Community 62 - "pytest"
+### Community 57 - "pytest"
 Cohesion: 0.05
-Nodes (106): ScanReport, UploadManifest, active(), Clock, make_chunks(), make_manifest(), new_service(), quarantine() (+98 more)
+Nodes (105): UploadManifest, active(), Clock, make_chunks(), make_manifest(), new_service(), quarantine(), staged() (+97 more)
+
+### Community 58 - "admin.py"
+Cohesion: 0.15
+Nodes (47): AccessGrantRequest, AccessRequest, activate_user(), AdminApiState, approve_document_version(), _body(), _bump_policy_epoch(), create_department() (+39 more)
+
+### Community 61 - "AuthenticationService"
+Cohesion: 0.12
+Nodes (3): SessionRecord, AuthenticationService, IdentityStore
 
 ### Community 64 - "EgressMode"
-Cohesion: 0.26
-Nodes (17): ModelEgressDenied, EgressMode, provider(), test_external_internal_requires_dpa(), test_external_internal_requires_residency(), test_external_provider_requires_retention_policy(), test_external_unapproved_provider_is_denied(), test_provider_allowlist_is_required() (+9 more)
+Cohesion: 0.44
+Nodes (10): ModelEgressDenied, provider(), gateway_for(), test_denied_primary_cannot_use_denied_fallback(), test_egress_denial_does_not_echo_input(), test_external_internal_without_dpa_is_denied(), test_external_internal_without_residency_is_denied(), test_external_training_provider_is_denied() (+2 more)
 
 ### Community 86 - "model/test_e2e_operational.py"
-Cohesion: 0.14
-Nodes (18): graph_labels(), policy(), route(), run_graph_query(), ScriptedEmbedding, task(), test_embedding_route_task_is_checked(), test_policy_version_is_required() (+10 more)
+Cohesion: 0.10
+Nodes (24): run_graph_query(), graph_labels(), policy(), route(), run_graph_query(), ScriptedEmbedding, task(), test_embedding_route_task_is_checked() (+16 more)
 
 ### Community 87 - "pytest"
 Cohesion: 0.23
@@ -346,38 +353,42 @@ Nodes (13): ModelPolicy, test_mapping_loads_versioned_policy_without_credentials
 
 ### Community 91 - "lifecycle.py"
 Cohesion: 0.07
-Nodes (33): _acl_digest(), ApprovalBlocked, ApprovalRecord, _chunk_digest(), _chunk_state(), DerivedIndex, DerivedIndexFailure, DerivedIndexRecord (+25 more)
+Nodes (32): _acl_digest(), ApprovalBlocked, ApprovalRecord, _chunk_digest(), _chunk_state(), DerivedIndex, DerivedIndexFailure, DerivedIndexRecord (+24 more)
+
+### Community 93 - "ModelProviderError"
+Cohesion: 0.13
+Nodes (7): ModelProviderError, ModelUnavailable, RankedDocument, FakeReranker, test_ranked_document_preserves_identifier_and_score(), ScriptedReranker, test_reranker_result_keeps_selected_route()
+
+### Community 94 - "context.py"
+Cohesion: 0.31
+Nodes (4): _header(), _new_traceparent(), _valid_traceparent(), test_correlation_context_preserves_valid_headers_and_creates_child()
 
 ### Community 97 - "test_identity.py"
-Cohesion: 0.19
-Nodes (11): IdentityError, make_service(), test_expired_session_is_rejected(), test_invalid_password_is_safe_auth_error(), test_mfa_is_required_for_privileged_role(), test_principal_rejects_extra_client_claims(), test_revoked_session_is_rejected(), test_sign_in_normalizes_email_and_returns_server_principal() (+3 more)
+Cohesion: 0.22
+Nodes (11): IdentityError, rate_limited(), make_service(), test_expired_session_is_rejected(), test_invalid_password_is_safe_auth_error(), test_mfa_is_required_for_privileged_role(), test_revoked_session_is_rejected(), test_sign_in_normalizes_email_and_returns_server_principal() (+3 more)
 
-### Community 99 - "ProviderPolicy"
+### Community 103 - "InMemoryIdentityStore"
 Cohesion: 0.13
-Nodes (6): route(), ProviderPolicy, ScriptedReranker, test_reranker_gateway_contract_passes_request_route_and_timeout(), test_reranker_result_keeps_selected_route(), test_reranker_happy_path_completes_once()
-
-### Community 102 - "ModelProviderError"
-Cohesion: 0.17
-Nodes (5): ModelProviderError, ModelUnavailable, RankedDocument, FakeReranker, test_ranked_document_preserves_identifier_and_score()
+Nodes (5): DepartmentRecord, IdentityRecord, normalize_roles(), InMemoryIdentityStore, test_noncanonical_role_cannot_create_identity()
 
 ## Knowledge Gaps
 - **1 isolated node(s):** `enterprise-agentic-rag-backend`
-  These have ≤1 connection - possible missing edges. (Counts symbols only; 572 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **38 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges. (Counts symbols only; 595 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **50 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `DataClassification` connect `test_models.py` to `EgressMode`, `ProviderPolicy`, `ModelProviderError`, `model/_baseline.py`, `model/test_e2e_operational.py`, `pytest`, `lifecycle.py`, `pytest`?**
-  _High betweenness centrality (0.035) - this node is a cross-community bridge._
+- **Why does `ChunkMetadata` connect `ChunkMetadata` to `auth`, `test_knowledge_database.py`, `test_knowledge_security.py`, `to_qdrant_payload`, `DocumentVersionMetadata`, `pytest`, `lifecycle.py`, `inherit_acl`?**
+  _High betweenness centrality (0.047) - this node is a cross-community bridge._
 - **Are the 32 inferred relationships involving `new_service()` (e.g. with `test_approval_expiry_blocks_processing()` and `test_empty_processing_input_is_rejected()`) actually correct?**
   _`new_service()` has 32 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `enterprise-agentic-rag-backend` to the rest of the system?**
   _1 weakly-connected nodes found - possible missing edges._
 - **Should `audit.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.09291521486643438 - nodes in this community are weakly interconnected._
-- **Why does `ChunkMetadata` connect `ChunkMetadata` to `unittest`, `test_knowledge_database.py`, `test_knowledge_security.py`, `to_qdrant_payload`, `DocumentVersionMetadata`, `inherit_acl`, `lifecycle.py`, `pytest`?**
-  _High betweenness centrality (0.032) - this node is a cross-community bridge._
+  _Cohesion score 0.09090909090909091 - nodes in this community are weakly interconnected._
+- **Why does `AuthenticatedPrincipal` connect `AuthenticatedPrincipal` to `test_identity.py`, `identity.py`, `AuthorizationEvaluator`, `authorization/test_behavior_component.py`, `InMemoryPolicyStore`, `DocumentVersionMetadata`, `admin.py`, `authorization/test_contract_integration.py`, `PolicyEnforcementPoint`, `AuthenticationService`, `test_authorization.py`?**
+  _High betweenness centrality (0.041) - this node is a cross-community bridge._
 - **Are the 47 inferred relationships involving `DataClassification` (e.g. with `ModelEgressDenied` and `ModelGateway`) actually correct?**
   _`DataClassification` has 47 INFERRED edges - model-reasoned connections that need verification._
 - **Should `compose` be split into smaller, more focused modules?**

@@ -36,7 +36,7 @@ class SignInResponse(BaseModel):
 identity_store = InMemoryIdentityStore()
 identity_service = AuthenticationService(identity_store)
 audit_sink: AuditSink = InMemoryAuditSink()
-router = APIRouter(prefix="/auth", tags=["identity"])
+router = APIRouter(tags=["identity", "administration"])
 
 
 def _request_context(request: Request, response: Response) -> CorrelationContext:
@@ -107,7 +107,7 @@ def _bearer_token(authorization: str | None) -> str:
     return token
 
 
-@router.post("/sign-in", response_model=SignInResponse)
+@router.post("/auth/sign-in", response_model=SignInResponse)
 async def sign_in(
     request: SignInRequest,
     http_request: Request,
@@ -146,7 +146,7 @@ async def sign_in(
     )
 
 
-@router.get("/me", response_model=AuthenticatedPrincipal)
+@router.get("/auth/me", response_model=AuthenticatedPrincipal)
 async def current_identity(
     http_request: Request,
     response: Response,
@@ -171,7 +171,7 @@ async def current_identity(
     return principal
 
 
-@router.post("/sign-out", status_code=204)
+@router.post("/auth/sign-out", status_code=204)
 async def sign_out(
     http_request: Request,
     response: Response,
@@ -194,3 +194,10 @@ async def sign_out(
         code="SESSION_REVOKED",
         metadata={"route": "identity:sign_out", "status_code": 204},
     )
+
+
+# The application shell includes this router directly. Keeping the admin
+# routes on the same router preserves the existing main.py write boundary.
+from .admin import router as administration_router  # noqa: E402
+
+router.include_router(administration_router)

@@ -443,7 +443,7 @@ class IngestionService:
             previous = self._idempotency.get((manifest.tenant_id, idempotency_key))
             if previous is not None:
                 if previous[0] != fingerprint:
-                    raise IdempotencyConflict("IDEMPOTENCY_CONFLICT", "upload idempotency key was reused")
+                    raise IdempotencyConflict("IDEMPOTENCY_KEY_REUSED", "upload idempotency key was reused")
                 return self._jobs[previous[1]]
             document_key = (manifest.tenant_id, manifest.document_id)
             if document_key in self._deleted_documents:

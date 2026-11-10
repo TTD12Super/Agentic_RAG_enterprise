@@ -26,7 +26,7 @@ def test_upload_idempotency_conflict_is_rejected():
     second = make_manifest(tenant_id=first.tenant_id, document_id=first.document_id, version_id=uuid4(), sha256="b" * 64)
     with pytest.raises(IngestionError) as error:
         service.quarantine_upload(second, idempotency_key="same")
-    assert error.value.code == "IDEMPOTENCY_CONFLICT"
+    assert error.value.code == "IDEMPOTENCY_KEY_REUSED"
 
 
 def test_retry_is_bounded_and_preserves_checksum():

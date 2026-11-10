@@ -7,10 +7,11 @@ import hashlib
 import hmac
 import secrets
 import threading
+from dataclasses import replace
 from datetime import datetime, timedelta
 from typing import Iterable, Protocol
 
-from .models import IdentityRecord, SessionRecord, normalize_roles
+from .models import DepartmentRecord, IdentityRecord, SessionRecord, normalize_roles
 
 PASSWORD_ITERATIONS = 120_000
 FAILED_WINDOW = timedelta(minutes=15)
@@ -78,12 +79,25 @@ class IdentityStore(Protocol):
 
     def revoke_session(self, session_id: str, revoked_at: datetime) -> None: ...
 
+    def find_all(self, tenant_id: str) -> tuple[IdentityRecord, ...]: ...
+
+    def update_identity(
+        self,
+        *,
+        user_id: str,
+        tenant_id: str,
+        roles: Iterable[str] | None = None,
+        department_ids: Iterable[str] | None = None,
+        active: bool | None = None,
+    ) -> IdentityRecord | None: ...
+
 
 class InMemoryIdentityStore:
     """Synthetic store for the API shell; production persistence is downstream."""
 
     def __init__(self) -> None:
         self._identities: dict[str, IdentityRecord] = {}
+        self._departments: dict[tuple[str, str], DepartmentRecord] = {}
         self._sessions: dict[str, SessionRecord] = {}
         self._failed: dict[str, list[datetime]] = {}
         self._locked_until: dict[str, datetime] = {}
@@ -135,12 +149,91 @@ class InMemoryIdentityStore:
                 None,
             )
 
+    def find_all(self, tenant_id: str) -> tuple[IdentityRecord, ...]:
+        with self._lock:
+            return tuple(
+                sorted(
+                    (record for record in self._identities.values() if record.tenant_id == tenant_id),
+                    key=lambda record: record.user_id,
+                )
+            )
+
+    def update_identity(
+        self,
+        *,
+        user_id: str,
+        tenant_id: str,
+        roles: Iterable[str] | None = None,
+        department_ids: Iterable[str] | None = None,
+        active: bool | None = None,
+    ) -> IdentityRecord | None:
+        with self._lock:
+            email, record = next(
+                (
+                    (email, value)
+                    for email, value in self._identities.items()
+                    if value.user_id == user_id and value.tenant_id == tenant_id
+                ),
+                (None, None),
+            )
+            if record is None or email is None:
+                return None
+            updated = replace(
+                record,
+                roles=record.roles if roles is None else normalize_roles(roles),
+                department_ids=(
+                    record.department_ids
+                    if department_ids is None
+                    else tuple(sorted(set(department_ids)))
+                ),
+                active=record.active if active is None else active,
+            )
+            self._identities[email] = updated
+            return updated
+
     def set_active(self, email: str, active: bool) -> None:
         with self._lock:
             record = self._identities[email]
-            self._identities[email] = IdentityRecord(
-                **{**record.__dict__, "active": active}
+            self._identities[email] = replace(record, active=active)
+
+    def create_department(self, *, tenant_id: str, name: str, department_id: str) -> DepartmentRecord:
+        normalized_name = name.strip()
+        if not normalized_name:
+            raise ValueError("department name must not be empty")
+        department = DepartmentRecord(department_id, tenant_id, normalized_name)
+        with self._lock:
+            key = (tenant_id, department_id)
+            if key in self._departments:
+                raise ValueError("department already exists")
+            self._departments[key] = department
+        return department
+
+    def list_departments(self, tenant_id: str) -> tuple[DepartmentRecord, ...]:
+        with self._lock:
+            return tuple(
+                sorted(
+                    (department for department in self._departments.values() if department.tenant_id == tenant_id),
+                    key=lambda department: department.department_id,
+                )
             )
+
+    def update_department(
+        self, *, tenant_id: str, department_id: str, name: str | None = None, active: bool | None = None
+    ) -> DepartmentRecord | None:
+        with self._lock:
+            key = (tenant_id, department_id)
+            department = self._departments.get(key)
+            if department is None:
+                return None
+            if name is not None and not name.strip():
+                raise ValueError("department name must not be empty")
+            updated = replace(
+                department,
+                name=department.name if name is None else name.strip(),
+                active=department.active if active is None else active,
+            )
+            self._departments[key] = updated
+            return updated
 
     def is_locked(self, email: str, now: datetime) -> datetime | None:
         with self._lock:

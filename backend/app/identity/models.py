@@ -69,6 +69,16 @@ class IdentityRecord:
         return bool(set(self.roles) & MFA_ROLES)
 
 
+@dataclass(frozen=True)
+class DepartmentRecord:
+    """Tenant-scoped department metadata used by administration APIs."""
+
+    department_id: str
+    tenant_id: str
+    name: str
+    active: bool = True
+
+
 @dataclass
 class SessionRecord:
     """Server-side session metadata keyed by a hash of the bearer token."""
