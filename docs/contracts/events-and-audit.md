@@ -1,8 +1,10 @@
-# Audit & event contract (proposal)
+# Audit & event contract (v1.0)
+
+The normative envelope, correlation and field-level privacy rules are defined in [`v1-baseline.md`](v1-baseline.md).
 
 Example event:
 ```json
-{"event":"DOCUMENT_READ_DECISION","trace_id":"trace-1","principal_id":"u-123","tenant_id":"tenant-a","resource_id":"doc-42","action":"document:read","decision":"DENY","policy_version":"policy-v7","occurred_at":"2026-11-08T10:00:00Z"}
+{"event":"DOCUMENT_READ_DECISION","traceparent":"00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01","principal_id":"u-123","tenant_id":"tenant-a","resource_id":"doc-42","action":"document:read","decision":"DENY","policy_epoch":42,"occurred_at":"2026-11-08T10:00:00Z"}
 ```
 Events should be structured with severity, timestamp, target, outcome, code version and correlation ID. Do not record full prompts, complete documents, tokens, passwords or raw user PII by default. Define retention and protected access. Loss of audit sink must be handled according to documented policy rather than silently disabling enforcement.
 

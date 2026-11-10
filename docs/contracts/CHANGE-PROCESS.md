@@ -8,3 +8,5 @@
 6. Tech Lead integrates and verifies tests. Never quietly treat a failing dependency as DONE.
 
 Status: DRAFT → REVIEW → APPROVED → IMPLEMENTING → VERIFIED → DEPRECATED (or REJECTED during review).
+
+The MVP baseline is `enterprise-agentic-rag` `schema_version=1.0`, recorded in `v1-baseline.md`. Version 1.0 is approved for implementation; later changes must create a new version or a documented additive revision and repeat affected-agent compatibility review.

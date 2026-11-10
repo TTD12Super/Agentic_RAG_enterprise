@@ -1,6 +1,6 @@
 # Contracts — shared boundaries (contract-first)
 
-**Do not start incompatible implementations.** Contract documents are initial proposals; owner accepts after reviewing ADRs. Data schemas shown are examples, not a silently committed production API.
+**Current baseline:** [`v1-baseline.md`](v1-baseline.md) is the approved MVP compatibility profile. Do not start incompatible implementations. Focused contract documents remain domain references and must follow v1.0 when examples differ.
 
 ## Required reading by team
 - `identity-and-policy.md`: principal and authorization decision.
@@ -54,4 +54,4 @@ The shared proposal baseline is [`../requirements/owner-decision-baseline.md`](.
 - Cursor pagination with default 20 and maximum 100.
 - Job states `QUEUED`, `RUNNING`, `PAUSED`, `RETRY_SCHEDULED`, `COMPLETED`, `FAILED`, `CANCELLED`; `MAINTENANCE` is a system mode.
 
-These remain proposal inputs until the related contracts are explicitly accepted.
+These inputs are accepted for the v1.0 MVP contract baseline on 2026-11-10. Provider, cloud, model and release decisions remain separately pending where noted in the decision register.

@@ -1,8 +1,10 @@
-# Secure Retrieval contract (proposal)
+# Secure Retrieval contract (v1.0)
+
+The normative envelope, scope freshness, citation binding and fail-closed rules are defined in [`v1-baseline.md`](v1-baseline.md).
 
 ## Internal request (never untrusted client request)
 ```json
-{"query":"warranty for product A","principal_ref":"server-session-reference","authorized_scope_ref":"policy-scoped-token","tenant_id":"tenant-a","top_k":8,"trace_id":"trace-1"}
+{"query":"warranty for product A","principal_ref":"server-session-reference","authorized_scope_ref":"policy-scoped-token","tenant_id":"tenant-a","top_k":8,"policy_epoch":42,"traceparent":"00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"}
 ```
 `authorized_scope_ref` is issued/validated by backend. The model cannot choose it.
 

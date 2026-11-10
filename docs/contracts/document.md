@@ -1,4 +1,6 @@
-# Document & chunk schema (proposal)
+# Document & chunk schema (v1.0)
+
+The normative lifecycle, publication, review-actor and citation-location rules are defined in [`v1-baseline.md`](v1-baseline.md).
 
 ## Document
 ```json

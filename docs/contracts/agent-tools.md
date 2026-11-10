@@ -1,11 +1,13 @@
-# Agent Tool Gateway contract (proposal)
+# Agent Tool Gateway contract (v1.0)
+
+The normative tool manifest, scope binding, replay and privacy rules are defined in [`v1-baseline.md`](v1-baseline.md).
 
 ## Principle
 The LLM proposes tool name/arguments; **backend validates and executes**. All tools have typed schema, explicit actions, rate budgets, timeout and audit ID.
 
 ## Read tool example
 ```json
-{"tool":"search_documents","arguments":{"query":"refund policy"},"request_context_ref":"server-issued-context","trace_id":"trace-1"}
+{"tool":"search_documents","arguments":{"query":"refund policy"},"authorized_scope_ref":"server-issued-scope","tool_call_id":"tool-call-uuid","traceparent":"00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01","deadline_at":"2026-11-10T10:00:10Z"}
 ```
 The Tool Gateway resolves current principal itself and checks `tool:execute`, then retrieval applies document-level ACL independently.
 
@@ -16,7 +18,7 @@ The Tool Gateway resolves current principal itself and checks `tool:execute`, th
 `SUCCESS` with typed payload, `DENIED`, `UNAVAILABLE`, `INVALID_ARGUMENTS`, `TIMEOUT`, `NEEDS_APPROVAL`. Never expose secrets, raw SQL errors or private server paths.
 
 ## Loop caps
-Define initial policy limits in `docs/rag/retrieval-design.md`: max tool calls, max retrieval rounds, deadline and token budget; measured adjustments only after tests.
+The v1 job-wide limits are at most two retrieval rounds, four subqueries and eight tool calls total. Every call has a server deadline, bounded output and a unique idempotent `tool_call_id`; measured adjustments require a versioned contract change.
 
 ## Owner-provided MVP allowlist
 

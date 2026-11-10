@@ -4,7 +4,7 @@ The machine-readable task graph is `harness/tasks/tasks.json`; this document exp
 
 | Phase | Outcome | Primary owners | Gate |
 |---|---|---|---|
-| 0 | Harness + contract architecture | tech lead, QA | DAG valid; contracts proposed; owner approval |
+| 0 | Harness + contract architecture | tech lead, QA | DAG valid; v1.0 contracts and 40-case contract tests accepted; owner approval |
 | 1 | Runtime bootstraps, data governance, identity, policy, infrastructure, audit | backend, frontend, security, devops | backend/frontend build baselines, documented RBAC/ABAC/ACL policies + negative tests |
 | 2 | Document ingestion, indexing and administration APIs | ingestion, backend | quarantine→approved→active; versioning, ACL and admin API integration |
 | 3 | Secure Hybrid RAG and direct answer baseline + evaluation | rag, QA | reproducible answer metrics, no forbidden-source leakage in test suite |

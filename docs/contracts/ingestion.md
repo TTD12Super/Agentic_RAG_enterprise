@@ -1,15 +1,17 @@
-# Ingestion API & job contract (proposal)
+# Ingestion API & job contract (v1.0)
+
+The normative envelope, attempt idempotency, review lifecycle, publication and maintenance rules are defined in [`v1-baseline.md`](v1-baseline.md).
 
 ## Commands
 - `POST /api/v1/documents`: multipart upload; requires `document:create`. Returns `202` + `job_id`, never immediately ACTIVE.
 - `GET /api/v1/ingestion-jobs/{job_id}`: status, redacted progress, error codes.
-- `POST /api/v1/documents/{id}/approve`: independent `document:approve` permission.
-- `POST /api/v1/documents/{id}/publish`: independent `document:publish` permission.
+- `POST /api/v1/documents/{document_id}/versions/{version_id}/approve`: independent `document:approve` permission.
+- `POST /api/v1/documents/{document_id}/versions/{version_id}/publish`: independent `document:publish` permission.
 - `DELETE /api/v1/documents/{id}`: `document:delete` plus retention/legal-hold policy.
 
 ## Job event
 ```json
-{"job_id":"job-1","tenant_id":"tenant-a","document_id":"doc-42","version_id":"v-2","job_state":"COMPLETED","document_version_state":"PROCESS_VALIDATED","attempt":1,"error_code":null}
+{"job_id":"job-1","tenant_id":"tenant-a","document_id":"doc-42","version_id":"v-2","content_sha256":"hex","attempt_id":"attempt-1","fencing_token":7,"job_state":"COMPLETED","document_version_state":"PROCESS_VALIDATED","attempt":1,"error_code":null}
 ```
 `job_state` follows the shared job lifecycle; `document_version_state` follows the document publication lifecycle. Use an idempotency key per upload event; retry only safe stages; quarantine files with parse errors. Atomic publication and cache invalidation are mandatory gates.
 

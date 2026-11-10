@@ -23,6 +23,7 @@
   "task_concurrency": {
     "ARCH-001": {"requested_agents": 1},
     "CONTRACT-001": {"requested_agents": 1},
+    "CONTRACT-TEST-001": {"requested_agents": 1},
     "BACKEND-BOOT-001": {"requested_agents": 1},
     "FRONTEND-BOOT-001": {"requested_agents": 1},
     "INFRA-BOOT-001": {"requested_agents": 1},
@@ -81,7 +82,7 @@
       "phase": 0,
       "title": "Review shared module contracts and prepare approval package",
       "owner": "security",
-      "status": "READY",
+      "status": "DONE",
       "depends_on": [
         "ARCH-001"
       ],
@@ -105,6 +106,30 @@
         "edit": "main_agent",
         "approve": "project_owner"
       }
+    },
+    {
+      "id": "CONTRACT-TEST-001",
+      "phase": 0,
+      "title": "Write and validate the v1 contract test package",
+      "owner": "qa_tester",
+      "status": "DONE",
+      "depends_on": ["ARCH-001"],
+      "deliverables": [
+        "Deterministic v1 contract validation tests",
+        "Four-family coverage evidence with at least 10 materially different cases per family",
+        "QA handoff with exact commands and results"
+      ],
+      "acceptance": "The v1 contract package has 10 behavior/component, 10 contract/integration, 10 security/adversarial and 10 E2E/operational cases; executable static/schema checks pass or clearly record NOT RUN/BLOCKED for unavailable runtime surfaces.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "tests/AGENTS.md", "tests/README.md", "docs/testing", "docs/contracts", "docs/security", "harness/tasks/tasks.json"],
+        "write_paths": ["tests/contracts", "harness/handoffs"],
+        "forbidden_paths": ["backend", "frontend", "infra", "docs/contracts", "harness/tasks/tasks.json"]
+      },
+      "architecture_blocks": ["02", "03", "04", "08", "09", "11", "13", "14", "16"],
+      "requirements": ["NFR-MAIN-002", "NFR-QA-005"],
+      "contracts": ["docs/contracts/v1-baseline.md", "docs/contracts/README.md"],
+      "validation": ["python3 -m unittest discover -s tests/contracts -p 'test_*.py'", "Record four-family coverage and actual results in the handoff"],
+      "handoff": "harness/handoffs/CONTRACT-TEST-001.md"
     },
     {
       "id": "BACKEND-BOOT-001",

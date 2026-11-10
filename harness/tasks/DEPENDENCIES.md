@@ -11,6 +11,7 @@ flowchart TD
   subgraph PHASE_0["Phase 0: Architecture & Contracts"]
     ARCH_001["ARCH-001"]
     CONTRACT_001["CONTRACT-001"]
+    CONTRACT_TEST_001["CONTRACT-TEST-001"]
   end
 
   subgraph PHASE_1["Phase 1: Foundations, Security & Evaluation Preparation"]
@@ -64,6 +65,7 @@ flowchart TD
   end
 
   ARCH_001 --> CONTRACT_001
+  ARCH_001 --> CONTRACT_TEST_001
   CONTRACT_001 --> BACKEND_BOOT_001
   CONTRACT_001 --> FRONTEND_BOOT_001
   CONTRACT_001 --> INFRA_BOOT_001

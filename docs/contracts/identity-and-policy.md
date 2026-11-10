@@ -1,4 +1,6 @@
-# Identity & Policy contract (proposal)
+# Identity & Policy contract (v1.0)
+
+The normative envelope, `AuthorizedScope`, worker trust and policy-composition rules are defined in [`v1-baseline.md`](v1-baseline.md).
 
 ## AuthenticatedPrincipal
 ```json
@@ -10,7 +12,7 @@ Canonical MVP roles are `system_admin`, `website_manager`, `employee` and `chair
 
 ## PolicyDecision
 ```json
-{"decision":"ALLOW","principal_id":"u-123","resource_type":"document","resource_id":"doc-42","action":"document:read","policy_version":"policy-v7","reason_code":"ACL_ALLOW","evaluated_at":"2026-11-08T10:02:00Z"}
+{"decision":"ALLOW","principal_id":"u-123","resource_type":"document","resource_id":"doc-42","action":"document:read","policy_epoch":42,"reason_code":"ACL_ALLOW","evaluated_at":"2026-11-08T10:02:00Z"}
 ```
 Fail closed on policy store unavailability, stale policy version, unknown classification or malformed principal.
 
@@ -18,7 +20,7 @@ Fail closed on policy store unavailability, stale policy version, unknown classi
 `document:create`, `document:read`, `document:update`, `document:delete`, `document:approve`, `document:publish`, `source:download`, `tool:execute`, `conversation:read`, `feedback:create`.
 
 ## Retrieval scope
-Provide a server-issued, opaque `AuthorizedScope` (tenant, policy version, classification constraints, filtered approved document/version IDs). Retriever receives a scope internally; never accept an arbitrary `allowed_document_ids` from the LLM or web client.
+Provide a server-issued, opaque `AuthorizedScope` (tenant, policy epoch, classification constraints, filtered approved document/version IDs, audience and expiry). Retriever receives a scope internally; never accept an arbitrary `allowed_document_ids` from the LLM or web client.
 
 ## API rule
 Use **PDP** to compute decision; **PEP** at endpoints, retriever, tool gateway, parent fetch and citation download. Never infer that `chairman` can upload, that `website_manager` can execute code/system operations, or that a client-supplied `admin` role can read every restricted document.

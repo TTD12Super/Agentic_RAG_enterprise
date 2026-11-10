@@ -38,7 +38,7 @@ No task status is changed by this document. Current database implementation is n
 | backend/app/db/migrations | Only .gitkeep | No schema or migration framework in the repository | Define migration order and constraints without fabricating completed migrations |
 | Architecture overview | Defines Core, workers, jobs, maintenance and data ownership | No relational ERD or database invariants | Add tenant, job, lifecycle, checkpoint and consistency design |
 | Contracts | Proposal-level identity, document, ingestion, retrieval, cache and audit contracts | No complete relational ownership or composite tenant rules | Map each contract to authoritative tables and constraints |
-| Tasks | ARCH-001 READY; CONTRACT-001 and INFRA-001 PLANNED | Database work depends on architecture and contract approval | Keep design proposal separate from implementation completion |
+| Tasks | ARCH-001 DONE; CONTRACT-001 in integration; DB-001 remains planned | Database work depends on v1.0 contract approval | Keep design proposal separate from implementation completion |
 | Worker workflows | Async RAG and ingestion flows are documented | No durable job lease, checkpoint, idempotency or outbox model | Add QUERY_JOBS, INGESTION_JOBS, AGENT_EXECUTION_STEPS and OUTBOX_EVENTS |
 | Tests | Only placeholders and guidance | No executable database/integration tests | Define required tests; report them as NOT RUN |
 | Current ERD/database docs | No database/database.md exists | No single source of truth for relational structure | This file is the proposed Database V2 source |
@@ -139,16 +139,35 @@ erDiagram
         timestamptz revoked_at
     }
 
+    ANONYMOUS_SESSIONS {
+        uuid id PK
+        uuid tenant_id FK
+        string session_hash
+        timestamptz created_at
+        timestamptz last_seen_at
+        timestamptz expires_at
+        timestamptz revoked_at
+    }
+
     DOCUMENTS {
         uuid id PK
         uuid tenant_id FK
         uuid owner_department_id FK
         uuid created_by_membership_id FK
-        uuid current_active_version_id FK
         string title
         string classification
         string status
         timestamptz created_at
+        timestamptz updated_at
+    }
+
+    DOCUMENT_HEADS {
+        uuid tenant_id PK, FK
+        uuid document_id PK, FK
+        uuid active_version_id FK
+        bigint corpus_epoch
+        string index_generation
+        bigint fencing_token
         timestamptz updated_at
     }
 
@@ -209,6 +228,14 @@ erDiagram
         string status
         string current_stage
         int attempt_count
+        string attempt_id
+        string content_sha256
+        string lease_id
+        bigint fencing_token
+        int expected_chunk_count
+        string chunk_digest
+        string acl_digest
+        string index_generation
         jsonb checkpoint
         string error_code
         timestamptz started_at
@@ -249,7 +276,11 @@ erDiagram
         jsonb checkpoint
         int checkpoint_schema_version
         string worker_id
+        string lease_id
+        bigint fencing_token
+        timestamptz heartbeat_at
         timestamptz lease_expires_at
+        timestamptz workflow_deadline_at
         timestamptz queued_at
         timestamptz next_retry_at
         string idempotency_key
@@ -275,6 +306,9 @@ erDiagram
         uuid id PK
         uuid tenant_id FK
         uuid started_by_membership_id FK
+        string lease_id
+        bigint fencing_token
+        timestamptz lease_expires_at
         string status
         string reason
         timestamptz started_at
@@ -289,6 +323,8 @@ erDiagram
         uuid version_id FK
         int citation_order
         int claim_order
+        jsonb source_locator
+        string evidence_snapshot_hash
         text source_quote
     }
 
@@ -312,6 +348,11 @@ erDiagram
         string resource_type
         uuid resource_id
         string outcome
+        string request_id
+        string action
+        string decision
+        string traceparent
+        bigint policy_epoch
         string trace_id
         jsonb safe_metadata
         timestamptz occurred_at
@@ -324,10 +365,85 @@ erDiagram
         uuid aggregate_id
         string event_type
         jsonb payload
+        bigint sequence_no
+        timestamptz acknowledged_at
         string status
         int attempt_count
         timestamptz available_at
         timestamptz published_at
+    }
+
+    IDEMPOTENCY_KEYS {
+        uuid id PK
+        uuid tenant_id FK
+        string operation
+        string resource_key
+        string idempotency_key
+        string request_fingerprint
+        int response_status
+        jsonb safe_response
+        timestamptz expires_at
+    }
+
+    AUTHORIZED_SCOPES {
+        uuid id PK
+        uuid tenant_id FK
+        string scope_hash
+        string audience
+        uuid principal_id FK
+        bigint policy_epoch
+        string classification_max
+        jsonb document_version_filter
+        string policy_decision_ref
+        timestamptz issued_at
+        timestamptz expires_at
+        timestamptz revoked_at
+    }
+
+    OUTBOX_CONSUMER_WATERMARKS {
+        uuid id PK
+        uuid tenant_id FK
+        string consumer_name
+        string aggregate_type
+        uuid aggregate_id FK
+        bigint applied_sequence_no
+        timestamptz last_acknowledged_at
+        timestamptz freshness_deadline
+    }
+
+    WORKER_REPLAY_NONCES {
+        uuid id PK
+        string worker_jti_hash
+        string worker_id
+        timestamptz expires_at
+        timestamptz first_seen_at
+    }
+
+    INDEX_PUBLICATIONS {
+        uuid id PK
+        uuid tenant_id FK
+        uuid version_id FK
+        string publication_id
+        string content_sha256
+        int expected_chunk_count
+        string chunk_digest
+        string acl_digest
+        string index_generation
+        string status
+        bigint fencing_token
+    }
+
+    REVOCATION_TOMBSTONES {
+        uuid id PK
+        uuid tenant_id FK
+        string revocation_id
+        string resource_type
+        uuid resource_id
+        uuid version_id FK
+        bigint epoch
+        bigint sequence_no
+        string reason
+        timestamptz issued_at
     }
 
     TENANTS ||--o{ DEPARTMENTS : contains
@@ -338,12 +454,14 @@ erDiagram
     ROLES ||--o{ MEMBERSHIP_ROLES : grants
     USERS ||--o{ AUTH_SESSIONS : opens
     TENANTS ||--o{ AUTH_SESSIONS : scopes
+    TENANTS ||--o{ ANONYMOUS_SESSIONS : scopes
 
     TENANTS ||--o{ DOCUMENTS : owns
     DEPARTMENTS o|--o{ DOCUMENTS : owns
     TENANT_MEMBERSHIPS ||--o{ DOCUMENTS : creates
     DOCUMENTS ||--o{ DOCUMENT_VERSIONS : versions
-    DOCUMENTS o|--o| DOCUMENT_VERSIONS : points_to_active
+    DOCUMENTS ||--o| DOCUMENT_HEADS : owns
+    DOCUMENT_HEADS ||--o| DOCUMENT_VERSIONS : points_to_active
     DOCUMENT_VERSIONS ||--o{ DOCUMENT_APPROVALS : requires
     TENANT_MEMBERSHIPS ||--o{ DOCUMENT_APPROVALS : reviews
     DOCUMENTS ||--o{ DOCUMENT_ACCESS_GRANTS : protects
@@ -372,6 +490,11 @@ erDiagram
     TENANTS ||--o{ AUDIT_EVENTS : records
     TENANT_MEMBERSHIPS o|--o{ AUDIT_EVENTS : acts
     TENANTS ||--o{ OUTBOX_EVENTS : emits
+    TENANTS ||--o{ IDEMPOTENCY_KEYS : owns
+    TENANTS ||--o{ AUTHORIZED_SCOPES : issues
+    TENANTS ||--o{ INDEX_PUBLICATIONS : publishes
+    TENANTS ||--o{ REVOCATION_TOMBSTONES : revokes
+    TENANTS ||--o{ OUTBOX_CONSUMER_WATERMARKS : tracks
 ~~~
 
 ### 4.1 Why the extra physical tables exist
@@ -384,6 +507,12 @@ erDiagram
 | DOCUMENT_APPROVALS | Two distinct review stages and auditability cannot be represented by one approval_id. |
 | MAINTENANCE_WINDOWS | Global/per-tenant maintenance and safe query resume need durable coordination. |
 | OUTBOX_EVENTS | Avoid losing queue/index/lifecycle events after a committed PostgreSQL transaction. |
+| IDEMPOTENCY_KEYS | Persist request fingerprints and safe replay responses across API/worker retries. |
+| AUTHORIZED_SCOPES | Store opaque, expiring, audience-bound retrieval capabilities and policy epochs. |
+| WORKER_REPLAY_NONCES | Reject replayed worker JWT identifiers without retaining raw tokens. |
+| INDEX_PUBLICATIONS | Gate cross-system publication with checksum, ACL digest, chunk manifest and fencing. |
+| REVOCATION_TOMBSTONES | Replay ordered revocations before retrieval, cache or source delivery. |
+| OUTBOX_CONSUMER_WATERMARKS | Track per-consumer applied sequence and freshness; global acknowledgement is insufficient for cache safety. |
 
 ## 5. Table responsibilities and key columns
 
@@ -399,13 +528,19 @@ erDiagram
 
 Security rule: a user is authorized in a tenant only through an active TENANT_MEMBERSHIPS row. Anonymous users have no membership and can use only the trusted public tenant route.
 
+ANONYMOUS_SESSIONS:
+
+- `session_hash` is server-issued and unique per tenant; clients never choose a tenant or raw session identifier.
+- `last_seen_at` and `expires_at` enforce 30-minute idle expiry and the configured maximum lifetime; revoked sessions fail closed.
+- Conversation rows reference the session hash/session record and cannot be rebound silently to an authenticated user.
+
 ### 5.2 Conversations and execution
 
 CONVERSATIONS:
 
 - tenant_id is mandatory.
 - user_id is nullable only for anonymous conversations.
-- anonymous_session_hash is required when user_id is null.
+- anonymous_session_hash/session reference is required when user_id is null.
 - One conversation cannot switch from anonymous to an employee account silently.
 - A user may read only their own conversations unless a separate approved incident-access policy exists.
 
@@ -424,6 +559,7 @@ QUERY_JOBS:
 - checkpoint is JSONB only for versioned, safe workflow state; checkpoint_schema_version is mandatory when checkpoint is non-null.
 - revision is incremented on every state/checkpoint update.
 - worker_id, heartbeat and lease_expires_at support recovery from worker crashes.
+- lease_id, fencing_token and heartbeat_at reject stale workers; workflow_deadline_at is immutable for the job.
 - selected provider/model and retry metadata may be stored in safe metadata or execution steps; never store raw hidden reasoning.
 
 AGENT_EXECUTION_STEPS:
@@ -447,7 +583,7 @@ DOCUMENTS:
 - Stable document identity across versions.
 - classification is PUBLIC or INTERNAL for the MVP; any extra sensitivity classification requires an approved policy.
 - status is a summary state such as ACTIVE, SOFT_DELETED or PURGED.
-- current_active_version_id is nullable during initial upload and points only to the document’s active version.
+- The dedicated DOCUMENT_HEADS row is the authoritative current-version pointer and stores corpus/index epochs; it is nullable only during initial upload.
 
 DOCUMENT_VERSIONS:
 
@@ -461,7 +597,7 @@ DOCUMENT_APPROVALS:
 
 - stage is 1 or 2.
 - Each decision records reviewer membership, attempt number, decision, time and safe note.
-- The owner-provided baseline permits the same reviewer to perform both stages; final policy approval still governs whether the schema must enforce any reviewer-separation rule.
+- The same reviewer may perform both stages in MVP, but each stage is an independent authorized, idempotent decision; one request cannot auto-approve both stages.
 
 CHUNKS:
 
@@ -471,6 +607,7 @@ CHUNKS:
 - content_text is bounded extracted text for retrieval/citation; original files remain in object storage.
 - vector_point_id, index_version and index_status map the relational chunk to a derived Qdrant/search projection.
 - Only chunks belonging to eligible ACTIVE versions may be returned by retrieval.
+- Each staged index has a manifest with expected chunk count, chunk digest, ACL digest, checksum and index generation; publication is blocked until it matches.
 
 INGESTION_JOBS:
 
@@ -478,6 +615,7 @@ INGESTION_JOBS:
 - current_stage records the last durable stage.
 - checkpoint is resumable stage metadata, not an assumption of full workflow recovery.
 - Failed, cancelled or superseded jobs must clean or quarantine derived artifacts before any publication.
+- Retry policy is stage-aware: invalid input is terminal, transient processing may retry up to three times for the unchanged checksum, review is never auto-retried, and publication/cleanup use ordered outbox reconciliation.
 
 ### 5.4 Authorization, provenance and quality
 
@@ -487,7 +625,13 @@ DOCUMENT_ACCESS_GRANTS:
 - action is explicit, for example DOCUMENT_READ or SOURCE_DOWNLOAD.
 - effect is ALLOW or DENY.
 - Grants are tenant-scoped and must never cross a document’s tenant.
-- PDP/PEP evaluates grants with role, department, document status, classification and policy version.
+- PDP/PEP evaluates grants with role, department, document status, classification and policy epoch; explicit DENY overrides every ALLOW and unknown/stale values deny.
+
+AUTHORIZED_SCOPES:
+
+- `scope_hash` is the stored hash of the opaque scope reference; the raw reference is never persisted in logs.
+- `classification_max`, `document_version_filter` and `policy_decision_ref` are required scope constraints produced by the authoritative policy store.
+- A scope without a current policy decision reference, classification bound or version filter is invalid and denies.
 
 ANSWER_CITATIONS:
 
@@ -495,18 +639,21 @@ ANSWER_CITATIONS:
 - citation_order controls presentation; claim_order supports claim-level verification.
 - The redundant version_id is enforced against CHUNKS with a composite foreign key.
 - source_quote is optional, bounded and must come from the authorized chunk.
+- source_locator is a PDF/DOCX/XLSX discriminated locator and evidence_snapshot_hash binds the citation to the immutable extracted evidence.
 
 FEEDBACK:
 
 - Links to an assistant message and optionally an active membership or anonymous session.
 - rating is constrained to the approved set, for example POSITIVE or NEGATIVE.
-- Recommended MVP rule: one feedback record per authenticated membership/message, updated rather than duplicated. Anonymous feedback policy remains pending.
+- MVP rule: one feedback record per authenticated membership/message and one per anonymous session/message; identical repeats replay the original result and changed repeats are rejected.
 
 AUDIT_EVENTS:
 
 - Append-only by application policy.
 - actor_membership_id is nullable for system events; actor_service identifies the trusted service.
 - safe_metadata excludes passwords, tokens, raw confidential documents, full prompts and unnecessary personal data.
+- traceparent and policy_epoch are first-class fields; trace_id is derived metadata only. Conversation body is never queryable through admin/operations audit paths.
+- request_id, action and decision are typed columns; `safe_metadata` is bounded redacted operational context, not a substitute for authorization/audit fields.
 - Retention and protected access are policy decisions, not database cascade behavior.
 
 ## 6. Constraints and referential behavior
@@ -517,11 +664,15 @@ AUDIT_EVENTS:
 - Normalized lowercase unique USERS.email.
 - Unique TENANTS.slug.
 - Unique TENANT_MEMBERSHIPS(tenant_id, user_id).
+- Unique ANONYMOUS_SESSIONS(tenant_id, session_hash).
 - Unique DEPARTMENTS(tenant_id, code).
 - Unique DOCUMENT_VERSIONS(tenant_id, document_id, version_number).
-- At most one ACTIVE DOCUMENT_VERSION per document using a partial unique index.
+- Exactly one DOCUMENT_HEADS row per tenant/document and at most one ACTIVE DOCUMENT_VERSION per document; DB-001 must update the head and publication state in one transaction.
 - Unique CHUNKS(tenant_id, version_id, chunk_index).
-- Unique query idempotency key per tenant.
+- Unique IDEMPOTENCY_KEYS(tenant_id, operation, resource_key, idempotency_key) and request fingerprint.
+- Unique AUTHORIZED_SCOPES(scope_hash) while active; expiry/revocation is checked on every use.
+- Unique WORKER_REPLAY_NONCES(worker_jti_hash) until expiry.
+- Unique INDEX_PUBLICATIONS(tenant_id, publication_id) and REVOCATION_TOMBSTONES(tenant_id, revocation_id).
 - Unique QUERY_JOBS(tenant_id, request_message_id).
 - Unique AGENT_EXECUTION_STEPS(tenant_id, query_job_id, step_number, attempt_number).
 - Exactly one non-null subject column in DOCUMENT_ACCESS_GRANTS.
@@ -530,6 +681,9 @@ AUDIT_EVENTS:
 - ended_at is null while a maintenance window is active.
 - response_message_id cannot point to a message in another tenant or conversation.
 - ANSWER_CITATIONS.version_id must match the cited CHUNKS.version_id.
+- IDEMPOTENCY_KEYS.response_status and safe_response are immutable after first completion; a fingerprint mismatch is rejected.
+- REVIEW_1 and REVIEW_2 events are independently idempotent; the same action cannot create two decisions.
+- INDEX_PUBLICATIONS cannot become PUBLISHED unless checksum, chunk count/digest, ACL digest and index generation match.
 
 ### 6.2 Tenant-consistency constraints
 
@@ -541,6 +695,7 @@ Use composite foreign keys where parent and child are tenant-owned:
 - (tenant_id, query_job_id) → QUERY_JOBS(tenant_id, id).
 - (tenant_id, message_id) → MESSAGES(tenant_id, id).
 - (tenant_id, membership_id) → TENANT_MEMBERSHIPS(tenant_id, id).
+- (tenant_id, version_id) → INDEX_PUBLICATIONS(tenant_id, version_id) and REVOCATION_TOMBSTONES(tenant_id, version_id) where the version is present.
 
 The database must not accept a valid UUID from a different tenant merely because the referenced row exists.
 
@@ -553,6 +708,8 @@ The database must not accept a valid UUID from a different tenant merely because
 - CHUNKS, citations and audit records: preserve historical evidence until approved retention/deletion policy permits removal.
 - Sessions: revoke or expire; cascade deletion is acceptable only for non-audit session rows.
 - Outbox events: retain until published or dead-lettered according to operational policy.
+- IDEMPOTENCY_KEYS: expire after 24 hours unless an operation-specific contract requires a shorter bounded lifetime.
+- WORKER_REPLAY_NONCES: expire after the token lifetime plus clock-skew allowance; store hashes only.
 
 ## 7. Index plan
 
@@ -563,9 +720,11 @@ Indexes should be added only for declared query patterns.
 | TENANT_MEMBERSHIPS | (tenant_id, status, user_id) | Resolve active membership |
 | TENANT_MEMBERSHIPS | (user_id, tenant_id) | List a user’s tenant memberships |
 | AUTH_SESSIONS | (user_id, revoked_at, expires_at) | Session validation/revocation |
+| ANONYMOUS_SESSIONS | UNIQUE (tenant_id, session_hash) | Anonymous session binding/expiry |
 | DOCUMENTS | (tenant_id, status, updated_at) | Current tenant catalog |
 | DOCUMENT_VERSIONS | UNIQUE (tenant_id, document_id, version_number) | Version lookup |
 | DOCUMENT_VERSIONS | Partial UNIQUE (tenant_id, document_id) WHERE publication_status = ACTIVE | One active version |
+| DOCUMENT_HEADS | PRIMARY KEY (tenant_id, document_id) | Atomic active-version/epoch head |
 | DOCUMENT_VERSIONS | (tenant_id, publication_status, updated_at) | Retrieval eligibility/reconciliation |
 | CHUNKS | UNIQUE (tenant_id, version_id, chunk_index) | Ordered chunk lookup |
 | CHUNKS | (tenant_id, version_id, index_status) | Staging/reconciliation |
@@ -581,6 +740,12 @@ Indexes should be added only for declared query patterns.
 | AUDIT_EVENTS | (tenant_id, occurred_at) | Tenant audit queries |
 | AUDIT_EVENTS | (trace_id, occurred_at) | Cross-service investigation |
 | OUTBOX_EVENTS | (status, available_at) | Publisher polling |
+| IDEMPOTENCY_KEYS | UNIQUE (tenant_id, operation, resource_key, idempotency_key) | Durable mutation replay |
+| AUTHORIZED_SCOPES | (tenant_id, scope_hash, expires_at, revoked_at) | Scope validation/revocation |
+| WORKER_REPLAY_NONCES | UNIQUE (worker_jti_hash) | Atomic worker replay consume |
+| INDEX_PUBLICATIONS | UNIQUE (tenant_id, publication_id) | Cross-store publication gate |
+| REVOCATION_TOMBSTONES | UNIQUE (tenant_id, revocation_id) | Ordered revocation replay |
+| OUTBOX_CONSUMER_WATERMARKS | UNIQUE (tenant_id, consumer_name, aggregate_type, aggregate_id) | Per-consumer invalidation freshness |
 
 Initial scale is approximately 100 documents and a 500-user target. This does not justify partitioning by default. Reconsider partitioning only after measured audit/job volume, retention and query plans.
 
@@ -803,18 +968,18 @@ Current verification status:
 | Database integration tests | NOT RUN — test directories contain placeholders only |
 | Production readiness | NOT CLAIMED |
 
-## 13. Remaining risks and approval blockers
+## 13. Remaining implementation risks and approval blockers
 
 1. Tenant scope: current product deployment is single-enterprise, while this schema is multi-tenant-ready. Owner must confirm whether shared multi-tenant runtime is out of MVP while tenant-aware storage remains required.
-2. Policy precedence: Chairman, department, role and document-grant precedence is still pending.
-3. RLS: choose between RLS defense-in-depth, application-only policy, or both.
-4. Maintenance: confirm global chatbot pause and exact checkpoint/resume semantics.
-5. Queue: broker, priority fairness, worker concurrency and delivery semantics remain pending.
+2. Policy precedence: v1 contract fixes Chairman, department, role and document-grant precedence; DB-001 must enforce it with tests.
+3. RLS: choose between RLS defense-in-depth, application-only policy, or both; application enforcement is mandatory either way.
+4. Maintenance: v1 contract fixes global chatbot pause, durable owner/fencing and checkpoint/resume semantics; DB-001 must implement and test it.
+5. Queue: broker, priority fairness and worker concurrency remain implementation/benchmark decisions; PostgreSQL durable jobs remain the MVP authority.
 6. Database technology: PostgreSQL is the target and Alembic is the owner-provided migration-tool proposal; the exact driver and deployment topology remain pending.
 7. Vector/search: Qdrant and lexical index ownership/reconciliation details require an approved contract.
-8. Retention: audit, conversations, versions, chunks, backups and permanent deletion require approved retention/legal-hold rules.
-9. Feedback: decide whether anonymous or authenticated users may submit multiple feedback records per message.
-10. Circular active-version reference: current_active_version_id needs a deferrable composite FK strategy; if the migration tool cannot support it, use a dedicated document-head table rather than weakening the invariant.
+8. Retention: v1 contract fixes the current baseline retention/legal-hold behavior; DB-001 must implement tombstone and permanent-delete safeguards.
+9. Feedback: v1 contract fixes one feedback record per membership/message or anonymous session/message.
+10. Active-version head: v2 chooses the dedicated DOCUMENT_HEADS table; DB-001 must implement and test its composite key, fencing and atomic update without weakening the one-active-version invariant.
 
 ## 14. Dependency-aware next steps
 

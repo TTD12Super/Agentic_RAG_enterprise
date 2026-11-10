@@ -1,11 +1,14 @@
-# Administrative API boundary — DRAFT
+# Administrative API boundary — v1.0
 
-This document is a proposed boundary for `CONTRACT-001` review and Project Owner approval. It does not declare implemented endpoints or grant new privileges.
+The normative envelope, authorization, idempotency, audit and privacy rules are defined in [`v1-baseline.md`](v1-baseline.md).
+
+This document is the v1.0 approved boundary for implementation planning. It does not declare implemented endpoints or grant new privileges.
 
 Backend owns the public `/api/v1` administration routes and orchestrates the existing identity, policy, document and ingestion services. Ingestion owns document-processing internals; Security reviews authorization. The initial document routes are proposed in `ingestion.md`. Before implementation, review and version the exact request/response schemas, pagination, error codes, asynchronous states and role-specific actions for:
 
 - Document upload, validation status, two review decisions, publication, metadata, access grants, version history, soft deletion and permanent deletion subject to retention and legal hold.
 - Administrator-provisioned account lifecycle, activation and role/department assignments; the Website Manager has website management but no code/system operations.
+- `POST /api/v1/access-requests` records an employee access request without granting access; approval and provisioning are separate authorized, idempotent actions.
 - Authorized audit and operational dashboard data without another user's conversation body, raw secrets or unrestricted source content.
 - Feedback review and aggregate quality/usage dashboard data, with measurement time, estimates and unavailable values clearly distinguished. Exact data fields and feedback access policy require owner and security review.
 

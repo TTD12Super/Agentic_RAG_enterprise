@@ -1,8 +1,10 @@
-# Answer & citation contract (proposal)
+# Answer & citation contract (v1.0)
+
+The normative citation-location, version-binding and source reauthorization rules are defined in [`v1-baseline.md`](v1-baseline.md).
 
 ## Answer
 ```json
-{"answer":"...","status":"ANSWERED","citations":[{"citation_id":"c-1","document_id":"doc-42","version_id":"v-2","page":4,"source_span":{"start":101,"end":412},"chunk_id":"chunk-77"}],"missing_information":[],"trace_id":"trace-1"}
+{"answer":"...","status":"ANSWERED","citations":[{"citation_id":"c-1","document_id":"doc-42","version_id":"v-2","page":4,"source_span":{"start":101,"end":412},"evidence_snapshot_hash":"hex","chunk_id":"chunk-77"}],"missing_information":[],"traceparent":"00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01","policy_epoch":42}
 ```
 Allowed status: ANSWERED, PARTIAL, INSUFFICIENT_EVIDENCE, ACCESS_DENIED, ERROR.
 
