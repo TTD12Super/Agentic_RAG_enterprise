@@ -606,7 +606,7 @@
       "phase": 3,
       "title": "Implement input, context and output security guardrails",
       "owner": "security",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "AUTH-001",
         "PROMPT-001"

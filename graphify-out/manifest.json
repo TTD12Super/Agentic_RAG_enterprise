@@ -266,9 +266,9 @@
     "ast_empty": true
   },
   "harness/tasks/tasks.json": {
-    "mtime": 1794307281.8041651,
-    "seen": 1794307294.076639,
-    "ast_hash": "3be939b14927e8756ef82af6f44af857",
+    "mtime": 1794308187.261135,
+    "seen": 1794308206.4377651,
+    "ast_hash": "2d12602cf4ef70223ae12591791d01c1",
     "semantic_hash": ""
   },
   "infra/docker/development.compose.yml": {
@@ -1443,9 +1443,9 @@
     "semantic_hash": ""
   },
   "harness/checklists/phase-3.md": {
-    "mtime": 1794306578.5697918,
-    "seen": 1794306591.311158,
-    "ast_hash": "1c2a11ccf4c51d8048977ffd1ada6ba9",
+    "mtime": 1794308187.261834,
+    "seen": 1794308206.437932,
+    "ast_hash": "09bb86688929a55b6d875a64aea9e003",
     "semantic_hash": ""
   },
   "harness/checklists/phase-4.md": {
@@ -2352,6 +2352,66 @@
     "mtime": 1794307281.8051083,
     "seen": 1794307294.0768309,
     "ast_hash": "4c0e78298b054dfaca36523df4de54b0",
+    "semantic_hash": ""
+  },
+  "backend/app/guardrails/__init__.py": {
+    "mtime": 1794307590.6773596,
+    "seen": 1794308206.437717,
+    "ast_hash": "5bf75f624b8572c1564d517809bff35b",
+    "semantic_hash": ""
+  },
+  "backend/app/guardrails/guardrails.py": {
+    "mtime": 1794307768.5958025,
+    "seen": 1794308206.437718,
+    "ast_hash": "35249cdd041e8fb8cfa02e72dce3f478",
+    "semantic_hash": ""
+  },
+  "tests/qa/guardrails/test_behavior_component.py": {
+    "mtime": 1794308052.219385,
+    "seen": 1794308206.4378119,
+    "ast_hash": "bda8f605757999927568fbc9882977cd",
+    "semantic_hash": ""
+  },
+  "tests/qa/guardrails/test_contract_integration.py": {
+    "mtime": 1794307984.1053061,
+    "seen": 1794308206.437813,
+    "ast_hash": "070fb37d1126c6b221fc6a592b1de161",
+    "semantic_hash": ""
+  },
+  "tests/qa/guardrails/test_e2e_operational.py": {
+    "mtime": 1794308052.220037,
+    "seen": 1794308206.437814,
+    "ast_hash": "6444c1552bad4494917d08b6722fbef7",
+    "semantic_hash": ""
+  },
+  "tests/qa/guardrails/test_security_adversarial.py": {
+    "mtime": 1794307958.556256,
+    "seen": 1794308206.437814,
+    "ast_hash": "77ea2c18cf27fab2bab8bb2ec48f64c8",
+    "semantic_hash": ""
+  },
+  "tests/security/test_guardrails.py": {
+    "mtime": 1794307695.225398,
+    "seen": 1794308206.437855,
+    "ast_hash": "9064d0c6708151681ef113134e1679ed",
+    "semantic_hash": ""
+  },
+  "harness/handoffs/GUARD-001.md": {
+    "mtime": 1794308200.3485446,
+    "seen": 1794308206.437952,
+    "ast_hash": "07861c4b9a2bf01d6976b9468b2e7462",
+    "semantic_hash": ""
+  },
+  "harness/handoffs/GUARD-QA-001.md": {
+    "mtime": 1794308140.9430523,
+    "seen": 1794308206.437953,
+    "ast_hash": "c2d9a62f0322b7f6a46feb19cb24ff50",
+    "semantic_hash": ""
+  },
+  "harness/reviews/GUARD-001-main-review.md": {
+    "mtime": 1794308187.2623904,
+    "seen": 1794308206.437973,
+    "ast_hash": "be1d348d19da11793b3360119aecc1dd",
     "semantic_hash": ""
   },
   "frontend/package-lock.json": {

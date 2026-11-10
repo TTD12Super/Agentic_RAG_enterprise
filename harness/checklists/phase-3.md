@@ -17,7 +17,7 @@
 - [ ] Tech Lead and human owner sign off before moving to next phase.
 
 ## Evidence links
-- Task IDs: `RAG-001`, `RAG-002`
-- Test reports: `harness/handoffs/RAG-QA-001.md`, `harness/handoffs/RAG-002-QA.md`, `harness/reviews/RAG-001-main-review.md`, `harness/reviews/RAG-002-main-review.md`
+- Task IDs: `RAG-001`, `RAG-002`, `PROMPT-001`, `GUARD-001`
+- Test reports: `harness/handoffs/RAG-QA-001.md`, `harness/handoffs/RAG-002-QA.md`, `harness/handoffs/PROMPT-QA-001.md`, `harness/handoffs/GUARD-QA-001.md`
 - ADRs: `docs/architecture/decisions/ADR-0001.md`–`ADR-0005.md`
 - Reviewer/date: Main Agent / 2026-11-10
