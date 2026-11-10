@@ -481,7 +481,7 @@
       "phase": 2,
       "title": "Implement secure ingestion lifecycle and index staging",
       "owner": "ingestion",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "AUTH-001",
         "KNOW-001",
