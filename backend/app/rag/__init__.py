@@ -16,6 +16,14 @@ from .hybrid import (
     InMemoryBM25Index,
     reciprocal_rank_fusion,
 )
+from .answer import (
+    AnswerCitation,
+    AnswerModelGateway,
+    AnswerResult,
+    AnswerStatus,
+    DirectAnswerPipeline,
+    GeneratedAnswer,
+)
 
 __all__ = [
     "Citation",
@@ -32,4 +40,10 @@ __all__ = [
     "HybridRetriever",
     "InMemoryBM25Index",
     "reciprocal_rank_fusion",
+    "AnswerCitation",
+    "AnswerModelGateway",
+    "AnswerResult",
+    "AnswerStatus",
+    "DirectAnswerPipeline",
+    "GeneratedAnswer",
 ]

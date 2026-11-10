@@ -658,7 +658,7 @@
       "phase": 3,
       "title": "Implement the direct RAG answer baseline for evaluation",
       "owner": "rag_engineer",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": ["RAG-002", "EVID-001", "PROMPT-001", "MODEL-001", "GUARD-001"],
       "deliverables": ["Direct authorized retrieval-to-model-to-evidence answer pipeline without runtime multi-agent orchestration", "Reproducible synthetic answer and citation integration tests"],
       "acceptance": "A real integrated direct answer path returns supported, partial or insufficient-evidence outcomes with authorized citations; policy, egress and guardrail failures fail closed; QA can evaluate it before ORCH-001.",
