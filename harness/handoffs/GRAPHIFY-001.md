@@ -9,7 +9,7 @@ Graphify is integrated as a local derived code knowledge graph. The project Code
 - Code graph: automatic local AST extraction with `scripts/sync_graph.sh`.
 - Agent guidance: `.codex/skills/graphify/SKILL.md` and the generated `AGENTS.md` section.
 - Automatic refresh: Graphify Git hooks can be installed locally with `graphify hook install`.
-- Visualization: `graphify-out/graph.html` is generated locally and ignored by Git.
+- Visualization: `graphify-out/graph.html` is generated and versioned with the graph artifacts.
 
 ## Evidence
 

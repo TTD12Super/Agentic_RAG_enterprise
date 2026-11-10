@@ -25,5 +25,7 @@ coverage/
 /data/cache/
 /data/exports/
 
-# Local Graphify indexes and rendered views; rebuild with scripts/sync_graph.sh.
-/graphify-out/
+# Keep the published graph artifacts; ignore caches and machine-specific state.
+/graphify-out/cache/
+/graphify-out/.graphify_*
+/graphify-out/2026-*/

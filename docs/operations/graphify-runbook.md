@@ -12,7 +12,7 @@ graphify query "How does authentication reach authorization?"
 graphify explain "AuthorizationEvaluator"
 ```
 
-`sync_graph.sh` uses `graphify update .` when an index exists and `graphify extract . --code-only` for the first build. The code-only path is local AST extraction and needs no API key. `graphify-out/` is intentionally ignored by Git because it is a derived local index and may include project structure.
+`sync_graph.sh` uses `graphify update .` when an index exists and `graphify extract . --code-only` for the first build. The code-only path is local AST extraction and needs no API key. The published `graphify-out/graph.json`, `graph.html`, `GRAPH_REPORT.md`, and `manifest.json` are versioned so agents and reviewers can inspect the same graph; caches and machine-specific state remain ignored.
 
 ## Update after code changes
 
