@@ -266,9 +266,9 @@
     "ast_empty": true
   },
   "harness/tasks/tasks.json": {
-    "mtime": 1794308187.261135,
-    "seen": 1794308206.4377651,
-    "ast_hash": "2d12602cf4ef70223ae12591791d01c1",
+    "mtime": 1794318017.6594596,
+    "seen": 1794318025.777715,
+    "ast_hash": "a2e85c1d70107186f30d99fa4a0b9ada",
     "semantic_hash": ""
   },
   "infra/docker/development.compose.yml": {
@@ -2412,6 +2412,66 @@
     "mtime": 1794308187.2623904,
     "seen": 1794308206.437973,
     "ast_hash": "be1d348d19da11793b3360119aecc1dd",
+    "semantic_hash": ""
+  },
+  "backend/app/evidence/__init__.py": {
+    "mtime": 1794317421.308178,
+    "seen": 1794318025.77767,
+    "ast_hash": "f6bb7af6bfcc2a7bc0de239df5cc6cb3",
+    "semantic_hash": ""
+  },
+  "backend/app/evidence/verifier.py": {
+    "mtime": 1794317963.2660224,
+    "seen": 1794318025.7776709,
+    "ast_hash": "19d984ce093d7b5da412eef54307f95b",
+    "semantic_hash": ""
+  },
+  "backend/tests/test_evidence.py": {
+    "mtime": 1794317478.622273,
+    "seen": 1794318025.777698,
+    "ast_hash": "7d3e91c4e8d773026bde17c9f9ed37de",
+    "semantic_hash": ""
+  },
+  "tests/qa/evidence/test_behavior_component.py": {
+    "mtime": 1794317813.1064072,
+    "seen": 1794318025.777749,
+    "ast_hash": "c037130558433a64262aaa83d649313b",
+    "semantic_hash": ""
+  },
+  "tests/qa/evidence/test_contract_integration.py": {
+    "mtime": 1794317813.1067352,
+    "seen": 1794318025.77775,
+    "ast_hash": "ff494e916b0b168f2e7e6a36bb69d16f",
+    "semantic_hash": ""
+  },
+  "tests/qa/evidence/test_e2e_operational.py": {
+    "mtime": 1794317837.2233715,
+    "seen": 1794318025.777751,
+    "ast_hash": "dd7739d9ddf52ed2ba1e83d201e99719",
+    "semantic_hash": ""
+  },
+  "tests/qa/evidence/test_security_adversarial.py": {
+    "mtime": 1794317837.2251403,
+    "seen": 1794318025.777751,
+    "ast_hash": "ec5748a7eea84561bf67b402927dd10e",
+    "semantic_hash": ""
+  },
+  "harness/handoffs/EVID-001.md": {
+    "mtime": 1794318017.6601882,
+    "seen": 1794318025.77788,
+    "ast_hash": "d94c1c09a6204052c5a365ae30e5448d",
+    "semantic_hash": ""
+  },
+  "harness/handoffs/EVID-QA-001.md": {
+    "mtime": 1794318005.5676308,
+    "seen": 1794318025.77788,
+    "ast_hash": "f59ad2df1af2ec7a405e1e642d769d68",
+    "semantic_hash": ""
+  },
+  "harness/reviews/EVID-001-main-review.md": {
+    "mtime": 1794318017.660902,
+    "seen": 1794318025.7779021,
+    "ast_hash": "728ded72a0262354f9a44d5ec03c4c9c",
     "semantic_hash": ""
   },
   "frontend/package-lock.json": {

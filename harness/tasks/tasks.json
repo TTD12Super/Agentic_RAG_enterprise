@@ -632,7 +632,7 @@
       "phase": 3,
       "title": "Implement evidence and citation verification",
       "owner": "rag_engineer",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "RAG-002",
         "PROMPT-001"
