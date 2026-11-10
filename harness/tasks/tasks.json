@@ -1,0 +1,852 @@
+{
+  "schema_version": "1.1",
+  "workflow": "Manual coordination by Codex Main Agent; not an automatic scheduler. Task DONE requires real acceptance evidence; phase transitions require explicit Project Owner approval.",
+  "decision_policy": {
+    "minor_decisions": "main_agent",
+    "major_decisions": "project_owner",
+    "record": "harness/handoffs/TASK-ID.md",
+    "escalate_when": [
+      "no approved option exists",
+      "options have material security, privacy, cost, architecture or availability trade-offs",
+      "the decision changes shared behavior or MVP scope"
+    ]
+  },
+  "agent_role_map": {
+    "tech_lead": "main_agent"
+  },
+  "concurrency_policy": {
+    "global_max_active_agents": 10,
+    "default_active_agents": 1,
+    "context_isolation": "separate_context_per_agent",
+    "activation": "task_specific_manual"
+  },
+  "task_concurrency": {
+    "ARCH-001": {"requested_agents": 1},
+    "CONTRACT-001": {"requested_agents": 1},
+    "BACKEND-BOOT-001": {"requested_agents": 1},
+    "FRONTEND-BOOT-001": {"requested_agents": 1},
+    "INFRA-BOOT-001": {"requested_agents": 1},
+    "DB-001": {"requested_agents": 1},
+    "INFRA-001": {"requested_agents": 1},
+    "INFRA-002": {"requested_agents": 1},
+    "INFRA-003": {"requested_agents": 1},
+    "IDENT-001": {"requested_agents": 1},
+    "AUTH-001": {"requested_agents": 1},
+    "AUDIT-001": {"requested_agents": 1},
+    "EVAL-PREP-001": {"requested_agents": 1},
+    "MODEL-001": {"requested_agents": 1},
+    "KNOW-001": {"requested_agents": 1},
+    "ING-001": {"requested_agents": 1},
+    "ADMIN-API-001": {"requested_agents": 1},
+    "RAG-001": {"requested_agents": 1},
+    "RAG-002": {"requested_agents": 1},
+    "PROMPT-001": {"requested_agents": 1},
+    "GUARD-001": {"requested_agents": 1},
+    "EVID-001": {"requested_agents": 1},
+    "ANSWER-BASE-001": {"requested_agents": 1},
+    "EVAL-001": {"requested_agents": 1},
+    "ORCH-001": {"requested_agents": 1},
+    "CHAT-001": {"requested_agents": 1},
+    "DASH-API-001": {"requested_agents": 1},
+    "UI-001": {"requested_agents": 1},
+    "CACHE-001": {"requested_agents": 1},
+    "RELEASE-001": {"requested_agents": 1},
+    "INT-001": {"requested_agents": 1}
+  },
+  "tasks": [
+    {
+      "id": "ARCH-001",
+      "phase": 0,
+      "title": "Finalize architecture and approve ADRs",
+      "owner": "tech_lead",
+      "status": "DONE",
+      "depends_on": [],
+      "deliverables": [
+        "Approved ADRs and 17-block ownership map"
+      ],
+      "acceptance": "Architecture scope and ADRs reviewed; explicit Project Owner sign-off. Shared contract approval is handled by CONTRACT-001.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "GOALS.md", "PLANS.md", "docs/architecture/overview.md", "docs/architecture/decisions", "docs/architecture/blocks", "docs/requirements/owner-decision-baseline.md"],
+        "write_paths": ["docs/architecture/decisions", "docs/architecture/blocks", "harness/handoffs"],
+        "forbidden_paths": ["backend", "frontend", "infra", "docs/contracts"]
+      },
+      "architecture_blocks": ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17"],
+      "requirements": ["NFR-MAIN-002", "NFR-QA-005"],
+      "contracts": [],
+      "validation": ["python3 scripts/validate_harness.py", "Record ADR review and Project Owner approval evidence"],
+      "handoff": "harness/handoffs/ARCH-001.md"
+    },
+    {
+      "id": "CONTRACT-001",
+      "phase": 0,
+      "title": "Review shared module contracts and prepare approval package",
+      "owner": "security",
+      "status": "READY",
+      "depends_on": [
+        "ARCH-001"
+      ],
+      "deliverables": [
+        "Security compatibility review and proposed contract changes",
+        "Approval package for versioned principal, document, retrieval and related contracts"
+      ],
+      "acceptance": "Security review and affected-agent compatibility review complete; Main Agent applies the versioned contract update; explicit Project Owner sign-off is recorded before dependent implementation.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "docs/contracts", "docs/architecture/overview.md", "docs/architecture/decisions", "docs/security", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["harness/handoffs"],
+        "forbidden_paths": ["backend", "frontend", "infra", "docs/contracts", "harness/tasks/tasks.json"]
+      },
+      "architecture_blocks": ["02", "03", "04", "08", "09", "11", "13", "14"],
+      "requirements": ["FR-AUTH-007", "FR-RAG-010", "NFR-MAIN-002", "NFR-QA-005"],
+      "contracts": ["docs/contracts/CHANGE-PROCESS.md", "docs/contracts/README.md", "docs/contracts/admin-management.md", "docs/contracts/identity-and-policy.md", "docs/contracts/document.md", "docs/contracts/retrieval.md", "docs/contracts/answer-and-citation.md", "docs/contracts/cache-and-memory.md", "docs/contracts/chat-and-jobs.md", "docs/contracts/agent-tools.md", "docs/contracts/events-and-audit.md", "docs/contracts/ingestion.md"],
+      "validation": ["python3 scripts/validate_harness.py", "Run contract compatibility and security review; record Owner sign-off"],
+      "handoff": "harness/handoffs/CONTRACT-001.md",
+      "decision_authority": {
+        "review": "security",
+        "edit": "main_agent",
+        "approve": "project_owner"
+      }
+    },
+    {
+      "id": "BACKEND-BOOT-001",
+      "phase": 1,
+      "title": "Bootstrap backend runtime and test baseline",
+      "owner": "backend",
+      "status": "PLANNED",
+      "depends_on": [
+        "CONTRACT-001"
+      ],
+      "deliverables": [
+        "Python project configuration and FastAPI application shell",
+        "Backend dependency, environment and pytest baseline",
+        "Safe backend build, import and test commands"
+      ],
+      "acceptance": "A clean backend environment installs from the documented configuration; FastAPI imports; the baseline test command executes; `.env.example` contains names only; no feature behavior or secrets are introduced; Tech Lead review.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "backend/README.md", "docs/contracts/README.md", "docs/contracts/identity-and-policy.md", "docs/contracts/events-and-audit.md", "docs/architecture/overview.md", "docs/architecture/blocks/02-api-identity.md", "docs/architecture/blocks/17-infrastructure-llmops.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["backend", "backend/tests", ".env.example", "harness/handoffs"],
+        "forbidden_paths": ["frontend", "infra", "docs/contracts", "docs/database", ".env", "data"]
+      },
+      "architecture_blocks": ["02", "17"],
+      "requirements": ["NFR-DEP-002", "NFR-DEP-003", "NFR-QA-005", "NFR-MAIN-002"],
+      "contracts": ["docs/contracts/identity-and-policy.md", "docs/contracts/events-and-audit.md"],
+      "validation": ["python -m compileall backend", "python -m pytest backend/tests", "Record clean-install, import and test results in the handoff"],
+      "handoff": "harness/handoffs/BACKEND-BOOT-001.md"
+    },
+    {
+      "id": "FRONTEND-BOOT-001",
+      "phase": 1,
+      "title": "Bootstrap frontend build and test baseline",
+      "owner": "frontend",
+      "status": "PLANNED",
+      "depends_on": [
+        "CONTRACT-001"
+      ],
+      "deliverables": [
+        "React and TypeScript project configuration and application shell",
+        "Frontend dependency, environment and test baseline",
+        "Safe frontend build, lint and test commands"
+      ],
+      "acceptance": "A clean frontend environment installs from the documented configuration; the application builds; the baseline lint/test commands execute; no API secrets are embedded; approved Figma remains the UI source of truth; Tech Lead review.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "frontend/AGENTS.md", "frontend/README.md", "docs/design/UI:UX reference", "docs/contracts/identity-and-policy.md", "docs/contracts/answer-and-citation.md", "docs/architecture/blocks/01-presentation-layer.md", "docs/architecture/blocks/02-api-identity.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["frontend", "tests/e2e", "harness/handoffs"],
+        "forbidden_paths": ["backend", "infra", "docs/contracts", "docs/design", ".env", "data"]
+      },
+      "architecture_blocks": ["01", "02"],
+      "requirements": ["FR-UI-001", "FR-UI-007", "FR-UI-010", "NFR-PERF-001", "NFR-PERF-004", "NFR-PERF-006", "NFR-QA-005"],
+      "contracts": ["docs/contracts/identity-and-policy.md", "docs/contracts/answer-and-citation.md"],
+      "validation": ["npm install", "npm run build", "npm run lint and npm test when configured", "Record clean-install, build and test results in the handoff"],
+      "handoff": "harness/handoffs/FRONTEND-BOOT-001.md"
+    },
+    {
+      "id": "INFRA-BOOT-001",
+      "phase": 1,
+      "title": "Prepare isolated disposable PostgreSQL for migration tests",
+      "owner": "devops",
+      "status": "PLANNED",
+      "depends_on": ["CONTRACT-001"],
+      "deliverables": ["Local disposable PostgreSQL test service and synthetic-only connection instructions", "Recorded startup, isolation and safe cleanup procedure"],
+      "acceptance": "Backend can connect to an isolated PostgreSQL instance for DB-001 upgrade and rollback tests; service uses synthetic data and no production credentials or paid resources; DevOps records startup and safe cleanup evidence.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "infra/AGENTS.md", "infra/README.md", "docs/database/database.md", "docs/operations/multi-agent-production-workflow.md"],
+        "write_paths": ["infra/docker", "infra/scripts", "harness/handoffs"],
+        "forbidden_paths": ["backend", "frontend", "docs/database", ".env", "data"]
+      },
+      "architecture_blocks": ["12", "17"],
+      "requirements": ["NFR-DEP-002", "NFR-QA-005", "NFR-MAIN-002"],
+      "contracts": ["docs/contracts/README.md"],
+      "validation": ["Start the isolated PostgreSQL test service and verify a synthetic connection", "Record isolation, cleanup target, exact commands and results without credentials"],
+      "handoff": "harness/handoffs/INFRA-BOOT-001.md"
+    },
+    {
+      "id": "DB-001",
+      "phase": 1,
+      "title": "Own database schema and migration baseline",
+      "owner": "backend",
+      "status": "PLANNED",
+      "depends_on": [
+        "CONTRACT-001",
+        "BACKEND-BOOT-001",
+        "INFRA-BOOT-001"
+      ],
+      "deliverables": [
+        "Database schema aligned with docs/database/database.md and approved contracts",
+        "Alembic migrations, indexes, constraints and rollback tests",
+        "Database ownership and migration change protocol"
+      ],
+      "acceptance": "Authoritative PostgreSQL schema, tenant/ACL/version constraints and migration order are reviewed; upgrade and rollback tests pass; Backend is the only migration-definition owner; Tech Lead review.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "backend/README.md", "docs/database/database.md", "docs/contracts/README.md", "docs/contracts/identity-and-policy.md", "docs/contracts/document.md", "docs/contracts/ingestion.md", "docs/contracts/retrieval.md", "docs/contracts/cache-and-memory.md", "docs/contracts/events-and-audit.md", "docs/architecture/blocks/10-knowledge-management.md", "docs/architecture/blocks/11-document-lifecycle.md", "docs/architecture/blocks/12-data-governance.md", "docs/architecture/blocks/13-memory-caching.md", "docs/architecture/blocks/17-infrastructure-llmops.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["docs/database", "backend/app/db", "backend/app/db/migrations", "backend/tests", "harness/handoffs"],
+        "forbidden_paths": ["infra/docker", "infra/monitoring", "frontend", "docs/contracts", ".env", "data"]
+      },
+      "architecture_blocks": ["10", "11", "12", "13", "17"],
+      "requirements": ["FR-DOC-002", "FR-DOC-003", "FR-DOC-008", "FR-DOC-009", "FR-DOC-011", "NFR-DATA-006", "NFR-REL-004", "NFR-REL-005", "NFR-REL-006", "NFR-MAIN-001", "NFR-MAIN-002", "NFR-QA-003", "NFR-QA-005"],
+      "contracts": ["docs/contracts/identity-and-policy.md", "docs/contracts/document.md", "docs/contracts/ingestion.md", "docs/contracts/retrieval.md", "docs/contracts/cache-and-memory.md", "docs/contracts/events-and-audit.md"],
+      "validation": ["python3 scripts/validate_harness.py", "Run Alembic upgrade and rollback tests against an isolated disposable PostgreSQL instance provided by DevOps before INFRA-001; use synthetic data only", "Verify schema ownership and migration ordering in the handoff"],
+      "handoff": "harness/handoffs/DB-001.md"
+    },
+    {
+      "id": "INFRA-001",
+      "phase": 1,
+      "title": "Create reproducible development services and migration runner",
+      "owner": "devops",
+      "status": "PLANNED",
+      "depends_on": [
+        "CONTRACT-001",
+        "DB-001",
+        "BACKEND-BOOT-001",
+        "FRONTEND-BOOT-001"
+      ],
+      "deliverables": [
+        "Docker Compose development services",
+        "Migration runner and rollback execution wiring"
+      ],
+      "acceptance": "Development environment starts reproducibly; the Backend-owned migrations execute and rollback through the infrastructure runner; Tech Lead review.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "infra/AGENTS.md", "infra/README.md", "docs/database/database.md", "docs/contracts/README.md", "docs/contracts/document.md", "docs/contracts/ingestion.md", "docs/contracts/events-and-audit.md", "docs/architecture/blocks/11-document-lifecycle.md", "docs/architecture/blocks/17-infrastructure-llmops.md", "docs/operations/deployment-runbook.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["infra/docker", "infra/scripts", "tests/integration", "harness/handoffs"],
+        "forbidden_paths": ["backend/app/authorization", "backend/app/rag", "frontend", ".env"]
+      },
+      "architecture_blocks": ["11", "12", "17"],
+      "requirements": ["NFR-DEP-002", "NFR-DEP-003", "NFR-REL-004", "NFR-REL-006", "NFR-QA-003", "NFR-MAIN-002"],
+      "contracts": ["docs/contracts/document.md", "docs/contracts/ingestion.md", "docs/contracts/events-and-audit.md"],
+      "validation": ["docker compose config", "Run migration upgrade and rollback tests", "Record exact commands and results in the handoff"],
+      "handoff": "harness/handoffs/INFRA-001.md"
+    },
+    {
+      "id": "INFRA-002",
+      "phase": 1,
+      "title": "Prepare cloud and secrets readiness report",
+      "owner": "devops",
+      "status": "DONE",
+      "depends_on": [],
+      "deliverables": [
+        "Provider comparison and student/demo versus production deployment recommendation",
+        "Redacted secret and configuration inventory with environment matrix",
+        "User action checklist for accounts, API keys, secret storage, rotation and spending limits"
+      ],
+      "acceptance": "Report uses official provider terms, names required secret/configuration variables without values, documents least privilege, rotation and budget controls, and confirms that no account creation, paid provisioning, secret handling or production deployment was performed.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "infra/AGENTS.md", "infra/README.md", "docs/operations/deployment-runbook.md", "docs/operations/incident-response.md", "docs/architecture/blocks/17-infrastructure-llmops.md", "docs/requirements/owner-decision-baseline.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["infra", "docs/operations", "harness/handoffs"],
+        "forbidden_paths": ["backend", "frontend", ".env", "data"]
+      },
+      "architecture_blocks": ["17"],
+      "requirements": ["NFR-DEP-001", "NFR-DEP-002", "NFR-DEP-003", "NFR-DEP-004", "NFR-SEC-003", "NFR-SEC-004", "NFR-COST-005"],
+      "contracts": [],
+      "validation": ["python3 scripts/validate_harness.py", "Redaction review confirming no secret values or account actions"],
+      "handoff": "harness/handoffs/INFRA-002.md"
+    },
+    {
+      "id": "INFRA-003",
+      "phase": 1,
+      "title": "Implement monitoring platform baseline",
+      "owner": "devops",
+      "status": "PLANNED",
+      "depends_on": [
+        "INFRA-001",
+        "INFRA-002",
+        "AUDIT-001"
+      ],
+      "deliverables": [
+        "OpenTelemetry Collector, exporters and collection configuration",
+        "Prometheus metrics, Grafana dashboards and Alertmanager rules",
+        "Retention configuration and monitoring platform smoke tests"
+      ],
+      "acceptance": "Real identity/API telemetry emitted by AUDIT-001 and infrastructure exporters is collected; dashboard and alert configurations for later signals are validated with synthetic telemetry; no secret or raw restricted content is stored; full live queue, ingestion, provider and RAG signals are verified at RELEASE-001 after those components exist; Tech Lead review.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "infra/AGENTS.md", "infra/README.md", "docs/architecture/blocks/15-observability-audit.md", "docs/architecture/blocks/17-infrastructure-llmops.md", "docs/contracts/events-and-audit.md", "docs/operations/deployment-runbook.md", "docs/operations/incident-response.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["infra/monitoring", "docs/operations", "tests/integration", "harness/handoffs"],
+        "forbidden_paths": ["backend/app/identity", "backend/app/authorization", "frontend", ".env"]
+      },
+      "architecture_blocks": ["15", "17"],
+      "requirements": ["FR-DASH-002", "FR-DASH-003", "FR-ALERT-001", "NFR-OBS-004", "NFR-OBS-005", "NFR-DATA-005", "NFR-AVAIL-001"],
+      "contracts": ["docs/contracts/events-and-audit.md"],
+      "validation": ["Validate Collector, exporter, Prometheus, Grafana and Alertmanager configuration syntax", "Run monitoring platform smoke tests against synthetic telemetry", "Record exact commands and results in the handoff"],
+      "handoff": "harness/handoffs/INFRA-003.md"
+    },
+    {
+      "id": "IDENT-001",
+      "phase": 1,
+      "title": "Implement identity and API shell",
+      "owner": "backend",
+      "status": "PLANNED",
+      "depends_on": [
+        "CONTRACT-001",
+        "BACKEND-BOOT-001"
+      ],
+      "deliverables": [
+        "Authenticated principal and API endpoints",
+        "Authentication and API contract tests"
+      ],
+      "acceptance": "Identity and API tests pass, including invalid/expired credential cases; Tech Lead review and integration evidence.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "backend/README.md", "docs/contracts/identity-and-policy.md", "docs/contracts/events-and-audit.md", "docs/architecture/blocks/02-api-identity.md", "docs/security/authorization-matrix.md", "docs/security/data-protection.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["backend/app/api", "backend/app/identity", "backend/tests", "harness/handoffs"],
+        "forbidden_paths": ["backend/app/authorization", "backend/app/rag", "frontend", "infra", "docs/contracts"]
+      },
+      "architecture_blocks": ["02"],
+      "requirements": ["FR-AUTH-001", "FR-AUTH-002", "FR-AUTH-003", "FR-AUTH-004", "NFR-SEC-002", "NFR-SEC-004", "NFR-SEC-005"],
+      "contracts": ["docs/contracts/identity-and-policy.md", "docs/contracts/events-and-audit.md"],
+      "validation": ["pytest backend/tests -k identity", "Run invalid, expired, MFA and rate-limit cases", "Record integration evidence in the handoff"],
+      "handoff": "harness/handoffs/IDENT-001.md"
+    },
+    {
+      "id": "AUTH-001",
+      "phase": 1,
+      "title": "Implement PDP/PEPs and RBAC/ABAC/ACL policies",
+      "owner": "security",
+      "status": "PLANNED",
+      "depends_on": [
+        "IDENT-001",
+        "CONTRACT-001"
+      ],
+      "deliverables": [
+        "Policy enforcement implementation",
+        "Allow/deny, tenant isolation and fail-closed tests"
+      ],
+      "acceptance": "Authorization and negative-path tests pass without unauthorized access; Tech Lead security review.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "backend/app/authorization/AGENTS.md", "docs/security/README.md", "docs/security/authorization-matrix.md", "docs/security/data-protection.md", "docs/contracts/identity-and-policy.md", "docs/contracts/document.md", "docs/contracts/retrieval.md", "docs/contracts/cache-and-memory.md", "docs/contracts/agent-tools.md", "docs/architecture/blocks/03-authorization.md", "docs/architecture/blocks/04-security-guardrails.md", "docs/architecture/blocks/12-data-governance.md", "docs/architecture/blocks/13-memory-caching.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["backend/app/authorization", "tests/security", "harness/handoffs"],
+        "forbidden_paths": ["backend/app/identity", "backend/app/rag", "frontend", "infra", "docs/contracts"]
+      },
+      "architecture_blocks": ["03", "04", "12", "13", "14"],
+      "requirements": ["FR-ROLE-001", "FR-ROLE-002", "FR-ROLE-003", "FR-ROLE-004", "FR-ROLE-005", "FR-ROLE-006", "FR-AUTH-005", "FR-AUTH-006", "FR-AUTH-007", "FR-AUTH-008", "NFR-SEC-001", "NFR-SEC-002", "NFR-SEC-006", "NFR-SEC-007", "NFR-SEC-009", "NFR-SCALE-005", "NFR-QA-002", "NFR-MAIN-003"],
+      "contracts": ["docs/contracts/identity-and-policy.md", "docs/contracts/document.md", "docs/contracts/retrieval.md", "docs/contracts/cache-and-memory.md", "docs/contracts/agent-tools.md"],
+      "validation": ["pytest tests/security -k authorization", "Run cross-tenant, explicit-deny, revocation and fail-closed cases", "Record Tech Lead security review in the handoff"],
+      "handoff": "harness/handoffs/AUTH-001.md"
+    },
+    {
+      "id": "AUDIT-001",
+      "phase": 1,
+      "title": "Implement application telemetry and privacy-safe audit",
+      "owner": "backend",
+      "status": "PLANNED",
+      "depends_on": [
+        "IDENT-001",
+        "INFRA-001"
+      ],
+      "deliverables": [
+        "Application telemetry schema, audit events and trace correlation",
+        "Application redaction and privacy tests"
+      ],
+      "acceptance": "Application audit and telemetry foundation emits real identity/API events with correlation and append-only audit persistence; application redaction tests pass; full request-to-policy-to-source tracing is verified at release after ingestion and RAG exist; Tech Lead review.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "backend/README.md", "docs/architecture/blocks/02-api-identity.md", "docs/architecture/blocks/11-document-lifecycle.md", "docs/architecture/blocks/15-observability-audit.md", "docs/contracts/events-and-audit.md", "docs/contracts/identity-and-policy.md", "docs/contracts/ingestion.md", "docs/security/data-protection.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["backend/app/observability", "backend/app/api", "backend/app/identity", "backend/tests", "tests/integration", "harness/handoffs"],
+        "forbidden_paths": ["infra/monitoring", "backend/app/authorization", "frontend", ".env"]
+      },
+      "architecture_blocks": ["02", "11", "15"],
+      "requirements": ["FR-AUD-001", "FR-AUD-002", "FR-AUD-003", "NFR-OBS-001", "NFR-OBS-002", "NFR-OBS-004", "NFR-DATA-005"],
+      "contracts": ["docs/contracts/events-and-audit.md", "docs/contracts/identity-and-policy.md", "docs/contracts/ingestion.md"],
+      "validation": ["pytest backend/tests tests/integration -k audit", "Run real identity/API audit persistence and correlation checks; defer full source tracing to RELEASE-001", "Run secret, raw-content and restricted-conversation redaction checks"],
+      "handoff": "harness/handoffs/AUDIT-001.md"
+    },
+    {
+      "id": "EVAL-PREP-001",
+      "phase": 1,
+      "title": "Prepare evaluation harness and golden fixtures",
+      "owner": "qa_tester",
+      "status": "PLANNED",
+      "depends_on": [
+        "CONTRACT-001"
+      ],
+      "deliverables": [
+        "Golden query/source/outcome fixtures",
+        "Evaluation protocol, metric definitions and synthetic metric-calculation self-checks"
+      ],
+      "acceptance": "Golden fixtures cover authorized and denied scenarios; metric definitions reviewed by Tech Lead; threshold approval remains a Product Owner decision.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "tests/AGENTS.md", "tests/README.md", "docs/testing/README.md", "docs/testing/golden-dataset-schema.md", "docs/testing/quality-gates.md", "docs/rag/evaluation-plan.md", "docs/contracts/retrieval.md", "docs/contracts/answer-and-citation.md", "docs/architecture/blocks/16-evaluation-feedback.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["tests/evaluation", "docs/testing", "harness/handoffs"],
+        "forbidden_paths": ["backend", "frontend", "infra", "data"]
+      },
+      "architecture_blocks": ["08", "09", "16"],
+      "requirements": ["FR-EVAL-001", "FR-DASH-004", "NFR-QA-001", "NFR-QA-002", "NFR-QA-006"],
+      "contracts": ["docs/contracts/retrieval.md", "docs/contracts/answer-and-citation.md"],
+      "validation": ["Validate golden fixtures against docs/testing/golden-dataset-schema.md", "Run metric-calculation self-checks using synthetic expected outcomes; full answer evaluation occurs in EVAL-001 after ANSWER-BASE-001", "Do not approve thresholds without Project Owner decision"],
+      "handoff": "harness/handoffs/EVAL-PREP-001.md"
+    },
+    {
+      "id": "MODEL-001",
+      "phase": 2,
+      "title": "Choose embedding/reranker adapters and provider policy",
+      "owner": "backend",
+      "status": "PLANNED",
+      "depends_on": [
+        "INFRA-001",
+        "BACKEND-BOOT-001"
+      ],
+      "deliverables": [
+        "Versioned model-adapter configuration",
+        "Data-egress and fallback tests"
+      ],
+      "acceptance": "Adapter, data-egress and fallback checks pass; any new external or paid provider requires prior Owner approval.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "backend/README.md", "docs/architecture/blocks/06-model-management.md", "docs/architecture/blocks/14-integration-layer.md", "docs/contracts/retrieval.md", "docs/contracts/answer-and-citation.md", "docs/contracts/events-and-audit.md", "docs/security/data-protection.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["backend/app/models", "backend/app/integrations", "backend/tests", "harness/handoffs"],
+        "forbidden_paths": ["backend/app/authorization", "backend/app/rag", "frontend", "infra", "docs/contracts"]
+      },
+      "architecture_blocks": ["06", "14"],
+      "requirements": ["FR-RAG-006", "NFR-REL-001", "NFR-SEC-008", "NFR-COST-001", "NFR-COST-005"],
+      "contracts": ["docs/contracts/retrieval.md", "docs/contracts/answer-and-citation.md", "docs/contracts/events-and-audit.md"],
+      "validation": ["pytest backend/tests -k model", "Run provider timeout, bounded retry, fallback and egress-policy cases", "Record provider approval status without storing credentials"],
+      "handoff": "harness/handoffs/MODEL-001.md"
+    },
+    {
+      "id": "KNOW-001",
+      "phase": 2,
+      "title": "Implement metadata and parent-child chunk schema",
+      "owner": "ingestion",
+      "status": "PLANNED",
+      "depends_on": [
+        "CONTRACT-001",
+        "INFRA-001",
+        "DB-001"
+      ],
+      "deliverables": [
+        "Metadata and document-version models",
+        "ACL inheritance and database integration tests"
+      ],
+      "acceptance": "Metadata, tenant isolation, immutable version IDs and ACL inheritance tests pass; Tech Lead review.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "backend/app/ingestion/AGENTS.md", "docs/database/database.md", "docs/architecture/blocks/10-knowledge-management.md", "docs/architecture/blocks/11-document-lifecycle.md", "docs/architecture/blocks/12-data-governance.md", "docs/contracts/document.md", "docs/contracts/ingestion.md", "docs/contracts/retrieval.md", "docs/contracts/identity-and-policy.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["backend/app/knowledge", "backend/tests", "harness/handoffs"],
+        "forbidden_paths": ["backend/app/authorization", "backend/app/rag", "frontend", "infra", "docs/contracts"]
+      },
+      "architecture_blocks": ["10", "11", "12"],
+      "requirements": ["FR-DOC-002", "FR-DOC-003", "FR-DOC-008", "FR-DOC-009", "FR-DOC-010", "FR-DOC-012", "NFR-MAIN-001", "NFR-DATA-003", "NFR-DATA-004"],
+      "contracts": ["docs/contracts/document.md", "docs/contracts/ingestion.md", "docs/contracts/retrieval.md", "docs/contracts/identity-and-policy.md"],
+      "validation": ["pytest backend/tests -k knowledge", "Run immutable-version, tenant-isolation, ACL-inheritance and database integration tests", "Request a new Backend-owned migration task for any schema change after DB-001; verify Qdrant metadata remains a derived projection"],
+      "handoff": "harness/handoffs/KNOW-001.md"
+    },
+    {
+      "id": "ING-001",
+      "phase": 2,
+      "title": "Implement secure ingestion lifecycle and index staging",
+      "owner": "ingestion",
+      "status": "PLANNED",
+      "depends_on": [
+        "AUTH-001",
+        "KNOW-001",
+        "MODEL-001",
+        "AUDIT-001"
+      ],
+      "deliverables": [
+        "Quarantine-to-approved-to-ACTIVE ingestion",
+        "Index staging, publication, revocation and version tests"
+      ],
+      "acceptance": "Approved ACTIVE-version publication and revoke/delete isolation tests pass; index serving and audit behavior verified; Tech Lead review.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "backend/app/ingestion/AGENTS.md", "docs/database/database.md", "docs/architecture/blocks/11-document-lifecycle.md", "docs/architecture/blocks/12-data-governance.md", "docs/architecture/blocks/17-infrastructure-llmops.md", "docs/contracts/document.md", "docs/contracts/ingestion.md", "docs/contracts/events-and-audit.md", "docs/security/data-protection.md", "docs/security/prompt-injection-defense.md", "docs/rag/ingestion-design.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["backend/app/ingestion", "backend/tests", "tests/integration", "harness/handoffs"],
+        "forbidden_paths": ["backend/app/rag", "backend/app/orchestration", "frontend", "infra", "docs/contracts"]
+      },
+      "architecture_blocks": ["11", "12", "17"],
+      "requirements": ["FR-DOC-001", "FR-DOC-005", "FR-DOC-006", "FR-DOC-007", "FR-DOC-008", "FR-DOC-009", "FR-DOC-011", "FR-DOC-013", "NFR-MAINT-001", "NFR-MAINT-002", "NFR-MAINT-003", "NFR-MAINT-004", "NFR-MAINT-005", "NFR-REL-006"],
+      "contracts": ["docs/contracts/document.md", "docs/contracts/ingestion.md", "docs/contracts/events-and-audit.md"],
+      "validation": ["pytest backend/tests tests/integration -k ingestion", "Run quarantine, two-review, ACTIVE-publication, revoke, delete, maintenance-state and failure-recovery cases", "Verify no STAGING or rejected version is retrievable; defer live chat-job pause/resume integration to CHAT-001"],
+      "handoff": "harness/handoffs/ING-001.md"
+    },
+    {
+      "id": "ADMIN-API-001",
+      "phase": 2,
+      "title": "Implement document and account administration APIs",
+      "owner": "backend",
+      "status": "PLANNED",
+      "depends_on": ["ING-001", "IDENT-001", "AUTH-001", "DB-001"],
+      "deliverables": ["Versioned document and account administration API routes integrated with identity, policy, ingestion and audit", "Real API and permission-negative integration tests"],
+      "acceptance": "Authorized managers can perform approved account and document workflows through the Backend API; Chairman, employees and anonymous users are denied management actions; two-review, ACL and revocation tests pass against real integrations. Cross-user conversation endpoint privacy is tested after CHAT-001 exists.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "backend/README.md", "docs/contracts/admin-management.md", "docs/contracts/ingestion.md", "docs/contracts/identity-and-policy.md", "docs/contracts/document.md", "docs/contracts/events-and-audit.md", "docs/security/authorization-matrix.md", "docs/requirements/functional-requirements.md"],
+        "write_paths": ["backend/app/api", "backend/app/identity", "backend/tests", "tests/integration", "harness/handoffs"],
+        "forbidden_paths": ["backend/app/db/migrations", "backend/app/authorization", "backend/app/ingestion", "frontend", "infra", "docs/contracts"]
+      },
+      "architecture_blocks": ["02", "03", "10", "11", "12", "15"],
+      "requirements": ["FR-AUTH-002", "FR-AUTH-003", "FR-AUTH-004", "FR-DOC-004", "FR-DOC-005", "FR-DOC-006", "FR-DOC-010", "FR-DOC-011", "FR-DOC-012", "FR-UI-005"],
+      "contracts": ["docs/contracts/admin-management.md", "docs/contracts/identity-and-policy.md", "docs/contracts/ingestion.md", "docs/contracts/document.md", "docs/contracts/events-and-audit.md"],
+      "validation": ["Run real identity, authorization, document and ingestion integration tests for administrative API routes", "Test unauthorized-role denial, two-review publication, account activation and revocation; test conversation endpoint privacy in CHAT-001", "Record exact commands and results in the handoff"],
+      "handoff": "harness/handoffs/ADMIN-API-001.md"
+    },
+    {
+      "id": "RAG-001",
+      "phase": 3,
+      "title": "Implement permission-aware dense retrieval baseline",
+      "owner": "rag_engineer",
+      "status": "PLANNED",
+      "depends_on": [
+        "ING-001",
+        "AUTH-001"
+      ],
+      "deliverables": [
+        "Dense retrieval pipeline",
+        "Authorized and forbidden-source retrieval tests"
+      ],
+      "acceptance": "Tenant, policy and ACTIVE-version checks pass at retrieval and source fetch; Tech Lead review.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "backend/app/rag/AGENTS.md", "docs/rag/README.md", "docs/rag/retrieval-design.md", "docs/architecture/blocks/03-authorization.md", "docs/architecture/blocks/08-rag-engine.md", "docs/architecture/blocks/12-data-governance.md", "docs/contracts/identity-and-policy.md", "docs/contracts/document.md", "docs/contracts/retrieval.md", "docs/security/authorization-matrix.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["backend/app/rag", "backend/tests", "harness/handoffs"],
+        "forbidden_paths": ["backend/app/ingestion", "backend/app/orchestration", "frontend", "infra", "docs/contracts"]
+      },
+      "architecture_blocks": ["03", "08", "12"],
+      "requirements": ["FR-RAG-002", "FR-RAG-005", "FR-RAG-006", "FR-RAG-007", "FR-RAG-010", "FR-RAG-012", "NFR-SEC-001", "NFR-SEC-002", "NFR-SEC-009", "NFR-QA-002"],
+      "contracts": ["docs/contracts/identity-and-policy.md", "docs/contracts/document.md", "docs/contracts/retrieval.md"],
+      "validation": ["pytest backend/tests -k dense_retrieval", "Run authorized, forbidden-source, stale-policy and ACTIVE-version tests", "Record retrieval/source-fetch authorization evidence"],
+      "handoff": "harness/handoffs/RAG-001.md"
+    },
+    {
+      "id": "RAG-002",
+      "phase": 3,
+      "title": "Add BM25, RRF fusion and reranking",
+      "owner": "rag_engineer",
+      "status": "PLANNED",
+      "depends_on": [
+        "RAG-001"
+      ],
+      "deliverables": [
+        "Hybrid retrieval and reranker implementation",
+        "Retrieval metrics and regression tests"
+      ],
+      "acceptance": "BM25/RRF/reranking tests pass and baseline retrieval metrics are recorded; Tech Lead review.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "backend/app/rag/AGENTS.md", "docs/rag/README.md", "docs/rag/retrieval-design.md", "docs/rag/evaluation-plan.md", "docs/architecture/blocks/06-model-management.md", "docs/architecture/blocks/08-rag-engine.md", "docs/contracts/retrieval.md", "docs/contracts/answer-and-citation.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["backend/app/rag", "backend/tests", "tests/evaluation", "harness/handoffs"],
+        "forbidden_paths": ["backend/app/authorization", "backend/app/ingestion", "frontend", "infra", "docs/contracts"]
+      },
+      "architecture_blocks": ["06", "08", "16"],
+      "requirements": ["FR-RAG-003", "FR-RAG-004", "FR-RAG-009", "FR-RAG-010", "FR-RAG-012", "NFR-COST-002", "NFR-QA-001", "NFR-QA-004"],
+      "contracts": ["docs/contracts/retrieval.md", "docs/contracts/answer-and-citation.md"],
+      "validation": ["pytest backend/tests tests/evaluation -k retrieval", "Run BM25, RRF, reranking and regression metrics", "Record corpus, model and configuration used for each metric"],
+      "handoff": "harness/handoffs/RAG-002.md"
+    },
+    {
+      "id": "PROMPT-001",
+      "phase": 3,
+      "title": "Implement prompt registry and secure context builder",
+      "owner": "orchestration",
+      "status": "PLANNED",
+      "depends_on": [
+        "CONTRACT-001",
+        "BACKEND-BOOT-001"
+      ],
+      "deliverables": [
+        "Versioned prompt registry",
+        "Context assembly and untrusted-content tests"
+      ],
+      "acceptance": "Context assembly preserves provenance and treats retrieved content as untrusted; unit tests pass; Tech Lead review.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "backend/app/orchestration/AGENTS.md", "docs/architecture/blocks/05-agent-orchestration.md", "docs/architecture/blocks/07-prompt-management.md", "docs/contracts/agent-tools.md", "docs/contracts/retrieval.md", "docs/contracts/answer-and-citation.md", "docs/prompts/README.md", "docs/prompts/system-v1.md", "docs/prompts/planner-v1.md", "docs/prompts/answer-v1.md", "docs/security/prompt-injection-defense.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["backend/app/prompts", "backend/app/orchestration", "backend/tests", "harness/handoffs"],
+        "forbidden_paths": ["backend/app/authorization", "backend/app/rag", "frontend", "infra", "docs/contracts"]
+      },
+      "architecture_blocks": ["05", "07"],
+      "requirements": ["FR-RAG-006", "FR-RAG-007", "FR-RAG-008", "FR-AGENT-001", "FR-AGENT-002", "FR-AGENT-008", "NFR-SEC-006", "NFR-SEC-008", "NFR-COST-002"],
+      "contracts": ["docs/contracts/agent-tools.md", "docs/contracts/retrieval.md", "docs/contracts/answer-and-citation.md"],
+      "validation": ["pytest backend/tests -k prompt", "Run provenance, untrusted-content and prompt-injection boundary tests", "Verify prompt versions and JSON schemas are recorded"],
+      "handoff": "harness/handoffs/PROMPT-001.md"
+    },
+    {
+      "id": "GUARD-001",
+      "phase": 3,
+      "title": "Implement input, context and output security guardrails",
+      "owner": "security",
+      "status": "PLANNED",
+      "depends_on": [
+        "AUTH-001",
+        "PROMPT-001"
+      ],
+      "deliverables": [
+        "Input/context/output guardrail implementation",
+        "Prompt-injection and output-safety regression tests"
+      ],
+      "acceptance": "Defined prompt-injection, unsafe tool and leakage test cases pass; security review completed by Tech Lead.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "backend/app/guardrails/AGENTS.md", "docs/security/README.md", "docs/security/prompt-injection-defense.md", "docs/security/data-protection.md", "docs/security/threat-model.md", "docs/contracts/agent-tools.md", "docs/contracts/identity-and-policy.md", "docs/contracts/events-and-audit.md", "docs/architecture/blocks/04-security-guardrails.md", "docs/architecture/blocks/05-agent-orchestration.md", "docs/architecture/blocks/14-integration-layer.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["backend/app/guardrails", "tests/security", "harness/handoffs"],
+        "forbidden_paths": ["backend/app/identity", "backend/app/rag", "frontend", "infra", "docs/contracts"]
+      },
+      "architecture_blocks": ["04", "05", "14"],
+      "requirements": ["FR-AGENT-005", "FR-AGENT-006", "NFR-SEC-006", "NFR-SEC-007", "NFR-SEC-008", "NFR-DATA-005", "NFR-QA-002", "NFR-QA-006"],
+      "contracts": ["docs/contracts/agent-tools.md", "docs/contracts/identity-and-policy.md", "docs/contracts/events-and-audit.md"],
+      "validation": ["pytest tests/security -k guardrail", "Run direct and indirect injection, unsafe-tool, secret-leakage and output-grounding cases", "Record false-positive limitations without weakening backend authorization"],
+      "handoff": "harness/handoffs/GUARD-001.md"
+    },
+    {
+      "id": "EVID-001",
+      "phase": 3,
+      "title": "Implement evidence and citation verification",
+      "owner": "rag_engineer",
+      "status": "PLANNED",
+      "depends_on": [
+        "RAG-002",
+        "PROMPT-001"
+      ],
+      "deliverables": [
+        "Claim-to-evidence and citation verifier",
+        "Source-span, version and revoked-citation tests"
+      ],
+      "acceptance": "Citations resolve to authorized ACTIVE source spans; insufficient-evidence and stale-source tests pass; Tech Lead review.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "backend/app/rag/AGENTS.md", "docs/architecture/blocks/03-authorization.md", "docs/architecture/blocks/08-rag-engine.md", "docs/architecture/blocks/09-evidence-verification.md", "docs/architecture/blocks/11-document-lifecycle.md", "docs/architecture/blocks/12-data-governance.md", "docs/contracts/answer-and-citation.md", "docs/contracts/retrieval.md", "docs/contracts/document.md", "docs/contracts/identity-and-policy.md", "docs/rag/retrieval-design.md", "docs/security/authorization-matrix.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["backend/app/evidence", "backend/tests", "harness/handoffs"],
+        "forbidden_paths": ["backend/app/authorization", "backend/app/ingestion", "frontend", "infra", "docs/contracts"]
+      },
+      "architecture_blocks": ["03", "08", "09", "11", "12"],
+      "requirements": ["FR-RAG-007", "FR-RAG-008", "FR-RAG-009", "FR-RAG-010", "FR-RAG-011", "FR-RAG-012", "NFR-DATA-003", "NFR-DATA-004", "NFR-SEC-001", "NFR-SEC-009"],
+      "contracts": ["docs/contracts/answer-and-citation.md", "docs/contracts/retrieval.md", "docs/contracts/document.md", "docs/contracts/identity-and-policy.md"],
+      "validation": ["pytest backend/tests -k evidence", "Run supported, unsupported, conflicting, stale-version and revoked-citation cases", "Verify source authorization in the evidence service; exercise actual citation preview/download API rechecks in CHAT-001"],
+      "handoff": "harness/handoffs/EVID-001.md"
+    },
+    {
+      "id": "ANSWER-BASE-001",
+      "phase": 3,
+      "title": "Implement the direct RAG answer baseline for evaluation",
+      "owner": "rag_engineer",
+      "status": "PLANNED",
+      "depends_on": ["RAG-002", "EVID-001", "PROMPT-001", "MODEL-001", "GUARD-001"],
+      "deliverables": ["Direct authorized retrieval-to-model-to-evidence answer pipeline without runtime multi-agent orchestration", "Reproducible synthetic answer and citation integration tests"],
+      "acceptance": "A real integrated direct answer path returns supported, partial or insufficient-evidence outcomes with authorized citations; policy, egress and guardrail failures fail closed; QA can evaluate it before ORCH-001.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "backend/app/rag/AGENTS.md", "docs/rag/retrieval-design.md", "docs/rag/evaluation-plan.md", "docs/contracts/retrieval.md", "docs/contracts/answer-and-citation.md", "docs/contracts/identity-and-policy.md", "docs/security/prompt-injection-defense.md"],
+        "write_paths": ["backend/app/rag", "backend/tests", "tests/integration", "harness/handoffs"],
+        "forbidden_paths": ["backend/app/authorization", "backend/app/orchestration", "backend/app/models", "frontend", "infra", "docs/contracts"]
+      },
+      "architecture_blocks": ["03", "04", "06", "07", "08", "09", "16"],
+      "requirements": ["FR-RAG-001", "FR-RAG-002", "FR-RAG-006", "FR-RAG-007", "FR-RAG-008", "FR-RAG-010", "NFR-SEC-001", "NFR-QA-004"],
+      "contracts": ["docs/contracts/retrieval.md", "docs/contracts/answer-and-citation.md", "docs/contracts/identity-and-policy.md"],
+      "validation": ["Run real integrated direct answer tests with approved model configuration and synthetic data", "Run supported, partial, insufficient-evidence, revoked-source and egress-denial cases", "Record configuration and executed results for EVAL-001"],
+      "handoff": "harness/handoffs/ANSWER-BASE-001.md"
+    },
+    {
+      "id": "EVAL-001",
+      "phase": 3,
+      "title": "Evaluate secure Advanced Hybrid RAG baseline",
+      "owner": "qa_tester",
+      "status": "PLANNED",
+      "depends_on": [
+        "RAG-002",
+        "EVID-001",
+        "GUARD-001",
+        "EVAL-PREP-001",
+        "ANSWER-BASE-001"
+      ],
+      "deliverables": [
+        "Baseline quality and security evaluation report",
+        "Metrics, failures and regression evidence"
+      ],
+      "acceptance": "Evaluation is reproducible; tested access controls show no forbidden-source leakage; acceptance thresholds approved by Product Owner.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "tests/AGENTS.md", "tests/README.md", "docs/testing/README.md", "docs/testing/golden-dataset-schema.md", "docs/testing/quality-gates.md", "docs/rag/evaluation-plan.md", "docs/contracts/retrieval.md", "docs/contracts/answer-and-citation.md", "docs/contracts/identity-and-policy.md", "docs/contracts/events-and-audit.md", "docs/architecture/blocks/08-rag-engine.md", "docs/architecture/blocks/09-evidence-verification.md", "docs/architecture/blocks/15-observability-audit.md", "docs/architecture/blocks/16-evaluation-feedback.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["tests/evaluation", "tests/security", "docs/testing", "harness/reviews", "harness/handoffs"],
+        "forbidden_paths": ["backend", "frontend", "infra", "data"]
+      },
+      "architecture_blocks": ["08", "09", "15", "16"],
+      "requirements": ["FR-EVAL-001", "FR-DASH-004", "NFR-QA-001", "NFR-QA-002", "NFR-QA-004", "NFR-QA-006"],
+      "contracts": ["docs/contracts/retrieval.md", "docs/contracts/answer-and-citation.md", "docs/contracts/identity-and-policy.md", "docs/contracts/events-and-audit.md"],
+      "validation": ["Run reproducible Golden Dataset evaluation of the direct V1-V4 baseline; defer V5 agentic evaluation until ORCH-001 exists", "Run permission-negative and forbidden-source leakage tests", "Record dataset, model, configuration, metrics and Project Owner threshold decision"],
+      "handoff": "harness/handoffs/EVAL-001.md"
+    },
+    {
+      "id": "ORCH-001",
+      "phase": 4,
+      "title": "Implement bounded LangGraph orchestrator and Tool Gateway",
+      "owner": "orchestration",
+      "status": "PLANNED",
+      "depends_on": [
+        "EVAL-001",
+        "EVID-001",
+        "AUTH-001",
+        "GUARD-001"
+      ],
+      "deliverables": [
+        "Bounded LangGraph workflow and authorized Tool Gateway",
+        "Loop, authorization and partial-answer integration tests"
+      ],
+      "acceptance": "Tool authorization is enforced by backend; loop limits, error handling and integration tests pass; Tech Lead review.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "backend/app/orchestration/AGENTS.md", "docs/architecture/blocks/05-agent-orchestration.md", "docs/architecture/blocks/07-prompt-management.md", "docs/architecture/blocks/14-integration-layer.md", "docs/contracts/agent-tools.md", "docs/contracts/identity-and-policy.md", "docs/contracts/retrieval.md", "docs/contracts/answer-and-citation.md", "docs/contracts/events-and-audit.md", "docs/prompts/README.md", "docs/security/authorization-matrix.md", "docs/security/prompt-injection-defense.md", "docs/rag/retrieval-design.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["backend/app/orchestration", "backend/app/tools", "backend/tests", "harness/handoffs"],
+        "forbidden_paths": ["backend/app/authorization", "backend/app/ingestion", "frontend", "infra", "docs/contracts"]
+      },
+      "architecture_blocks": ["05", "07", "14"],
+      "requirements": ["FR-AGENT-001", "FR-AGENT-002", "FR-AGENT-005", "FR-AGENT-006", "FR-AGENT-007", "FR-AGENT-008", "NFR-SEC-006", "NFR-SEC-007", "NFR-REL-002", "NFR-REL-003", "NFR-SCALE-004", "NFR-SCALE-005"],
+      "contracts": ["docs/contracts/agent-tools.md", "docs/contracts/identity-and-policy.md", "docs/contracts/retrieval.md", "docs/contracts/answer-and-citation.md", "docs/contracts/events-and-audit.md"],
+      "validation": ["pytest backend/tests -k orchestration", "Run simple/complex routing, bounded-loop, denied-tool, timeout and partial-answer integration cases", "Verify no runtime multi-agent architecture is introduced"],
+      "handoff": "harness/handoffs/ORCH-001.md"
+    },
+    {
+      "id": "UI-001",
+      "phase": 5,
+      "title": "Implement role-aware admin and chat frontend",
+      "owner": "frontend",
+      "status": "PLANNED",
+      "depends_on": [
+        "IDENT-001",
+        "ING-001",
+        "ORCH-001",
+        "FRONTEND-BOOT-001",
+        "CHAT-001",
+        "ADMIN-API-001",
+        "DASH-API-001"
+      ],
+      "deliverables": [
+        "Admin and chat UIs",
+        "Admin, Chairman and regular-user browser E2E tests"
+      ],
+      "acceptance": "Role-based UI scenarios, denied actions, and response citations pass E2E checks; Tech Lead review.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "frontend/AGENTS.md", "frontend/README.md", "docs/architecture/overview.md", "docs/architecture/blocks/01-presentation-layer.md", "docs/architecture/blocks/02-api-identity.md", "docs/architecture/blocks/03-authorization.md", "docs/architecture/blocks/09-evidence-verification.md", "docs/architecture/blocks/11-document-lifecycle.md", "docs/architecture/blocks/15-observability-audit.md", "docs/contracts/identity-and-policy.md", "docs/contracts/answer-and-citation.md", "docs/contracts/document.md", "docs/contracts/ingestion.md", "docs/contracts/events-and-audit.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md", "docs/design/UI:UX reference"],
+        "write_paths": ["frontend", "tests/e2e", "harness/handoffs"],
+        "forbidden_paths": ["backend", "infra", "docs/contracts", "docs/design"]
+      },
+      "architecture_blocks": ["01", "02", "03", "09", "11", "15"],
+      "requirements": ["FR-UI-001", "FR-UI-002", "FR-UI-003", "FR-UI-004", "FR-UI-005", "FR-UI-006", "FR-UI-007", "FR-UI-008", "FR-UI-009", "FR-UI-010", "FR-DASH-001", "FR-DASH-002", "FR-DASH-003", "FR-DASH-004", "FR-FEED-001", "NFR-PERF-001", "NFR-PERF-004", "NFR-PERF-006", "NFR-AVAIL-002"],
+      "contracts": ["docs/contracts/admin-management.md", "docs/contracts/identity-and-policy.md", "docs/contracts/chat-and-jobs.md", "docs/contracts/answer-and-citation.md", "docs/contracts/document.md", "docs/contracts/ingestion.md", "docs/contracts/events-and-audit.md"],
+      "validation": ["Run browser E2E for anonymous, employee, Chairman, Website Manager and System Admin views", "Run denied-action, maintenance-state, citation and source-opening checks", "Verify the implementation matches approved Figma; do not invent new screens"],
+      "handoff": "harness/handoffs/UI-001.md"
+    },
+    {
+      "id": "CACHE-001",
+      "phase": 4,
+      "title": "Implement scoped memory and caching",
+      "owner": "backend",
+      "status": "PLANNED",
+      "depends_on": [
+        "ORCH-001",
+        "AUTH-001"
+      ],
+      "deliverables": [
+        "Permission-scoped cache and conversation memory",
+        "Tenant isolation, revocation and invalidation tests"
+      ],
+      "acceptance": "Cache keys and invalidation enforce tenant, principal, policy and document-version scope; security tests pass; Tech Lead review.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "docs/architecture/blocks/03-authorization.md", "docs/architecture/blocks/12-data-governance.md", "docs/architecture/blocks/13-memory-caching.md", "docs/contracts/cache-and-memory.md", "docs/contracts/identity-and-policy.md", "docs/contracts/answer-and-citation.md", "docs/contracts/events-and-audit.md", "docs/security/authorization-matrix.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["backend/app/cache", "backend/app/memory", "backend/tests", "harness/handoffs"],
+        "forbidden_paths": ["backend/app/authorization", "backend/app/rag", "frontend", "infra", "docs/contracts"]
+      },
+      "architecture_blocks": ["03", "12", "13"],
+      "requirements": ["FR-AGENT-003", "FR-AGENT-004", "FR-AUTH-008", "FR-DOC-011", "NFR-COST-003", "NFR-COST-004", "NFR-SEC-009", "NFR-DATA-001", "NFR-DATA-002", "NFR-DATA-004"],
+      "contracts": ["docs/contracts/cache-and-memory.md", "docs/contracts/identity-and-policy.md", "docs/contracts/answer-and-citation.md", "docs/contracts/events-and-audit.md"],
+      "validation": ["pytest backend/tests -k cache", "Run tenant, principal, policy-version, ACTIVE-version, revocation and memory-deletion tests", "Verify PostgreSQL remains durable checkpoint authority and Redis remains non-authoritative"],
+      "handoff": "harness/handoffs/CACHE-001.md"
+    },
+    {
+      "id": "CHAT-001",
+      "phase": 4,
+      "title": "Implement chat API, durable jobs and conversation history",
+      "owner": "backend",
+      "status": "PLANNED",
+      "depends_on": ["ORCH-001", "CACHE-001", "IDENT-001", "DB-001"],
+      "deliverables": ["Versioned chat and own-conversation APIs with anonymous session isolation", "Authorized citation preview/download endpoints and feedback API, subject to approved feedback policy", "Durable query-job admission, status, queue, maintenance and resume integration", "Real Core-to-worker, authorization and conversation privacy tests"],
+      "acceptance": "Authenticated and anonymous users can submit and retrieve their own authorized conversation/job; approved feedback and citation preview/download endpoints enforce current policy; real ingestion maintenance safely pauses and resumes durable jobs; privacy, replay and denial tests pass; Tech Lead review.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "backend/README.md", "docs/architecture/workflows/user-query.md", "docs/architecture/overview.md", "docs/database/database.md", "docs/contracts/identity-and-policy.md", "docs/contracts/cache-and-memory.md", "docs/contracts/answer-and-citation.md", "docs/contracts/events-and-audit.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["backend/app/api", "backend/app/core", "backend/app/feedback", "backend/tests", "tests/integration", "harness/handoffs"],
+        "forbidden_paths": ["backend/app/db/migrations", "backend/app/authorization", "backend/app/orchestration", "frontend", "infra", "docs/contracts"]
+      },
+      "architecture_blocks": ["02", "03", "05", "13", "17"],
+      "requirements": ["FR-UI-003", "FR-UI-004", "FR-FEED-001", "FR-AUTH-007", "FR-AUTH-008", "FR-DOC-013", "NFR-DATA-001", "NFR-DATA-002", "NFR-MAINT-001", "NFR-MAINT-002", "NFR-SCALE-004", "NFR-SCALE-006"],
+      "contracts": ["docs/contracts/identity-and-policy.md", "docs/contracts/cache-and-memory.md", "docs/contracts/chat-and-jobs.md", "docs/contracts/answer-and-citation.md", "docs/contracts/events-and-audit.md"],
+      "validation": ["Run real PostgreSQL and Core-to-worker integration tests for query submission, status, completion, ingestion-triggered maintenance checkpoint/resume and idempotent retry", "Run anonymous-session isolation, cross-user history denial, feedback access and citation preview/download revocation tests", "Record exact commands and results in the handoff"],
+      "handoff": "harness/handoffs/CHAT-001.md"
+    },
+    {
+      "id": "DASH-API-001",
+      "phase": 4,
+      "title": "Implement role-limited management dashboard and feedback review APIs",
+      "owner": "backend",
+      "status": "PLANNED",
+      "depends_on": ["CHAT-001", "ADMIN-API-001", "EVAL-001", "INFRA-003"],
+      "deliverables": ["Authorized dashboard aggregates for users, documents, usage, ingestion, latency, costs and measured evaluation", "Authorized feedback review API with privacy-safe output"],
+      "acceptance": "Management APIs expose only authorized, available aggregates and feedback; usage/cost estimates and quality metrics show their measurement period, provenance and unavailable state; ordinary users cannot access management data.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "docs/contracts/admin-management.md", "docs/contracts/events-and-audit.md", "docs/architecture/blocks/15-observability-audit.md", "docs/architecture/blocks/16-evaluation-feedback.md", "docs/security/authorization-matrix.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["backend/app/api", "backend/app/feedback", "backend/app/observability", "backend/tests", "tests/integration", "harness/handoffs"],
+        "forbidden_paths": ["backend/app/db/migrations", "backend/app/authorization", "frontend", "infra", "docs/contracts"]
+      },
+      "architecture_blocks": ["02", "03", "15", "16"],
+      "requirements": ["FR-DASH-001", "FR-DASH-002", "FR-DASH-003", "FR-DASH-004", "FR-FEED-001", "NFR-COST-006", "NFR-OBS-003", "NFR-OBS-006"],
+      "contracts": ["docs/contracts/admin-management.md", "docs/contracts/events-and-audit.md", "docs/contracts/identity-and-policy.md"],
+      "validation": ["Run integration tests for authorized and denied dashboard and feedback review", "Verify data minimization, estimate labels, metric provenance and unavailable states", "Record exact commands and results in the handoff"],
+      "handoff": "harness/handoffs/DASH-API-001.md"
+    },
+    {
+      "id": "RELEASE-001",
+      "phase": 6,
+      "title": "Complete MVP security and operational release review",
+      "owner": "qa_tester",
+      "status": "PLANNED",
+      "depends_on": [
+        "UI-001",
+        "CACHE-001",
+        "AUDIT-001",
+        "INFRA-003",
+        "EVAL-001",
+        "GUARD-001"
+      ],
+      "deliverables": [
+        "MVP E2E, security and operational readiness report",
+        "Signed go/no-go decision"
+      ],
+      "acceptance": "All required MVP quality gates pass; explicit Project Owner release approval. Optional enterprise integration is not required.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "PLANS.md", "harness/checklists", "harness/tasks/tasks.json", "tests/AGENTS.md", "tests/README.md", "docs/testing/quality-gates.md", "docs/operations/deployment-runbook.md", "docs/operations/incident-response.md", "docs/security", "docs/contracts/README.md", "docs/architecture/overview.md", "docs/architecture/blocks/15-observability-audit.md", "docs/architecture/blocks/17-infrastructure-llmops.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["tests/e2e", "tests/integration", "tests/security", "docs/operations", "harness/reviews", "harness/handoffs"],
+        "forbidden_paths": ["backend", "frontend", "infra", "docs/contracts", "harness/tasks/tasks.json"]
+      },
+      "architecture_blocks": ["01", "02", "03", "04", "08", "09", "11", "13", "15", "16", "17"],
+      "requirements": ["NFR-QA-003", "NFR-QA-004", "NFR-QA-005", "NFR-REL-004", "NFR-REL-005", "NFR-REL-006", "NFR-DEP-004", "NFR-OBS-005", "NFR-PERF-002", "NFR-PERF-003", "NFR-PERF-005", "NFR-SCALE-001", "NFR-SCALE-002", "NFR-SCALE-003", "FR-ALERT-001"],
+      "contracts": ["docs/contracts/README.md", "docs/contracts/identity-and-policy.md", "docs/contracts/document.md", "docs/contracts/retrieval.md", "docs/contracts/answer-and-citation.md", "docs/contracts/cache-and-memory.md", "docs/contracts/chat-and-jobs.md", "docs/contracts/events-and-audit.md", "docs/contracts/agent-tools.md", "docs/contracts/ingestion.md"],
+      "validation": ["Run applicable Phase 0-6 checklists and MVP E2E, security and operational tests; Phase 7 is optional", "Run V5 agentic Golden Dataset evaluation against the real ORCH-001 integration", "Verify real request-to-policy-to-source telemetry and monitoring with ingestion and RAG", "Review backup/restore, incident, rollback and monitoring evidence", "Record explicit Project Owner go/no-go approval"],
+      "handoff": "harness/handoffs/RELEASE-001.md"
+    },
+    {
+      "id": "INT-001",
+      "phase": 7,
+      "title": "Integrate explicitly approved external sources and tools (optional)",
+      "owner": "backend",
+      "status": "PLANNED",
+      "depends_on": [
+        "RELEASE-001"
+      ],
+      "deliverables": [
+        "Approved source/tool connectors",
+        "Connector authorization, consent and audit tests"
+      ],
+      "acceptance": "Each optional connector passes source-specific policy, audit and integration tests; Owner approval is required before enabling external access or deployment.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "docs/architecture/blocks/14-integration-layer.md", "docs/architecture/blocks/17-infrastructure-llmops.md", "docs/contracts/agent-tools.md", "docs/contracts/identity-and-policy.md", "docs/contracts/events-and-audit.md", "docs/security/authorization-matrix.md", "docs/security/data-protection.md", "docs/operations/deployment-runbook.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
+        "write_paths": ["backend/app/integrations", "tests/integration", "harness/handoffs"],
+        "forbidden_paths": ["backend/app/authorization", "backend/app/rag", "frontend", "infra", "docs/contracts"]
+      },
+      "architecture_blocks": ["14", "17"],
+      "requirements": ["FR-AGENT-005", "FR-AGENT-006", "NFR-SEC-007", "NFR-COST-005", "NFR-MAIN-002"],
+      "contracts": ["docs/contracts/agent-tools.md", "docs/contracts/identity-and-policy.md", "docs/contracts/events-and-audit.md"],
+      "validation": ["Run connector schema, identity, consent, timeout, audit and cross-tenant integration tests", "Verify each external source has explicit Owner approval before enablement", "Record external data-processing and deployment constraints"],
+      "handoff": "harness/handoffs/INT-001.md"
+    }
+  ]
+}
