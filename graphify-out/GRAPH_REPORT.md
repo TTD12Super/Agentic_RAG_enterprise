@@ -1,7 +1,9 @@
 # Graph Report - enterprise-agentic-rag-harness  (2026-11-10)
 
 ## Corpus Check
-- cluster-only mode — file stats not available
+- 169 files · ~153,514 words
+- Verdict: corpus is large enough that graph structure adds value.
+- Unclassified: 68 file(s) not represented in the graph (top: (none) 53, .toml 9, .example 2)
 
 ## Summary
 - 1878 nodes · 4364 edges · 98 communities (60 shown, 38 thin omitted)
@@ -9,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e266dbfa`
+- Built from commit: `dc632ed4`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -97,11 +99,13 @@
 5. `ChunkMetadata` - 45 edges
 6. `make_manifest()` - 43 edges
 7. `section()` - 42 edges
-8. `AuthenticatedPrincipal` - 36 edges
-9. `active()` - 36 edges
+8. `active()` - 36 edges
+9. `AuthenticatedPrincipal` - 36 edges
 10. `inherit_acl()` - 35 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `test_mvp_accepts_only_pdf_docx_and_xlsx()` --calls--> `make_manifest()`  [INFERRED]
+  tests/qa/ingestion/test_contract_integration.py → backend/tests/_ingestion_fixtures.py
 - `ScriptedEmbedding` --uses--> `ModelProviderError`  [INFERRED]
   tests/qa/model/_baseline.py → backend/app/integrations/model_gateway.py
 - `ScriptedReranker` --uses--> `ModelProviderError`  [INFERRED]
@@ -110,8 +114,6 @@
   tests/qa/model/test_e2e_operational.py → backend/app/integrations/model_gateway.py
 - `test_primary_attempts_are_bounded()` --uses--> `ModelUnavailable`  [INFERRED]
   tests/qa/model/test_e2e_operational.py → backend/app/integrations/model_gateway.py
-- `test_runtime_provider_failure_does_not_leak_raw_payload()` --uses--> `ModelUnavailable`  [INFERRED]
-  tests/qa/model/test_security_adversarial.py → backend/app/integrations/model_gateway.py
 
 ## Import Cycles
 - None detected.
@@ -366,16 +368,16 @@ Nodes (5): ModelProviderError, ModelUnavailable, RankedDocument, FakeReranker, t
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `AuthenticatedPrincipal` connect `AuthorizationEvaluator` to `test_identity.py`, `identity/models.py`, `identity.py`, `authorization/test_behavior_component.py`, `AuthorizationDenied`, `InMemoryPolicyStore`, `DocumentVersionMetadata`, `authorization/test_contract_integration.py`, `PolicyEnforcementPoint`, `service.py`, `test_authorization.py`?**
-  _High betweenness centrality (0.044) - this node is a cross-community bridge._
+- **Why does `DataClassification` connect `test_models.py` to `EgressMode`, `ProviderPolicy`, `ModelProviderError`, `model/_baseline.py`, `model/test_e2e_operational.py`, `pytest`, `lifecycle.py`, `pytest`?**
+  _High betweenness centrality (0.035) - this node is a cross-community bridge._
 - **Are the 32 inferred relationships involving `new_service()` (e.g. with `test_approval_expiry_blocks_processing()` and `test_empty_processing_input_is_rejected()`) actually correct?**
   _`new_service()` has 32 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `enterprise-agentic-rag-backend` to the rest of the system?**
   _1 weakly-connected nodes found - possible missing edges._
 - **Should `audit.py` be split into smaller, more focused modules?**
   _Cohesion score 0.09291521486643438 - nodes in this community are weakly interconnected._
-- **Why does `DataClassification` connect `test_models.py` to `EgressMode`, `ProviderPolicy`, `ModelProviderError`, `model/_baseline.py`, `model/test_e2e_operational.py`, `pytest`, `lifecycle.py`, `pytest`?**
-  _High betweenness centrality (0.035) - this node is a cross-community bridge._
+- **Why does `ChunkMetadata` connect `ChunkMetadata` to `unittest`, `test_knowledge_database.py`, `test_knowledge_security.py`, `to_qdrant_payload`, `DocumentVersionMetadata`, `inherit_acl`, `lifecycle.py`, `pytest`?**
+  _High betweenness centrality (0.032) - this node is a cross-community bridge._
 - **Are the 47 inferred relationships involving `DataClassification` (e.g. with `ModelEgressDenied` and `ModelGateway`) actually correct?**
   _`DataClassification` has 47 INFERRED edges - model-reasoned connections that need verification._
 - **Should `compose` be split into smaller, more focused modules?**
