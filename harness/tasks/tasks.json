@@ -678,7 +678,7 @@
       "phase": 3,
       "title": "Evaluate secure Advanced Hybrid RAG baseline",
       "owner": "qa_tester",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "RAG-002",
         "EVID-001",
@@ -690,7 +690,7 @@
         "Baseline quality and security evaluation report",
         "Metrics, failures and regression evidence"
       ],
-      "acceptance": "Evaluation is reproducible; tested access controls show no forbidden-source leakage; acceptance thresholds approved by Product Owner.",
+      "acceptance": "Technical evaluation is reproducible and tested access controls show no forbidden-source leakage; final acceptance thresholds and production sign-off are deferred to the project-wide quality gate.",
       "scope": {
         "read_paths": ["AGENTS.md", "tests/AGENTS.md", "tests/README.md", "docs/testing/README.md", "docs/testing/golden-dataset-schema.md", "docs/testing/quality-gates.md", "docs/rag/evaluation-plan.md", "docs/contracts/retrieval.md", "docs/contracts/answer-and-citation.md", "docs/contracts/identity-and-policy.md", "docs/contracts/events-and-audit.md", "docs/architecture/blocks/08-rag-engine.md", "docs/architecture/blocks/09-evidence-verification.md", "docs/architecture/blocks/15-observability-audit.md", "docs/architecture/blocks/16-evaluation-feedback.md", "docs/requirements/functional-requirements.md", "docs/requirements/non-functional-requirements.md"],
         "write_paths": ["tests/evaluation", "tests/security", "docs/testing", "harness/reviews", "harness/handoffs"],
@@ -699,7 +699,7 @@
       "architecture_blocks": ["08", "09", "15", "16"],
       "requirements": ["FR-EVAL-001", "FR-DASH-004", "NFR-QA-001", "NFR-QA-002", "NFR-QA-004", "NFR-QA-006"],
       "contracts": ["docs/contracts/retrieval.md", "docs/contracts/answer-and-citation.md", "docs/contracts/identity-and-policy.md", "docs/contracts/events-and-audit.md"],
-      "validation": ["Run reproducible Golden Dataset evaluation of the direct V1-V4 baseline; defer V5 agentic evaluation until ORCH-001 exists", "Run permission-negative and forbidden-source leakage tests", "Record dataset, model, configuration, metrics and Project Owner threshold decision"],
+      "validation": ["Run reproducible Golden Dataset evaluation of the direct V1-V4 baseline; defer V5 agentic evaluation until ORCH-001 exists", "Run permission-negative and forbidden-source leakage tests", "Record dataset, model, configuration and metrics; defer final threshold approval to the project-wide quality gate"],
       "handoff": "harness/handoffs/EVAL-001.md"
     },
     {

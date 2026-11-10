@@ -16,6 +16,11 @@
 - [ ] Security and contract compatibility reviewed.
 - [ ] Tech Lead and human owner sign off before moving to next phase.
 
+Development waiver recorded 2026-11-11: the final production quality gate and
+remaining release thresholds are deferred until the whole project is complete.
+Per-task tests, security checks and fail-closed behavior remain mandatory while
+Phase 4 development proceeds.
+
 ## Evidence links
 - Task IDs: `RAG-001`, `RAG-002`, `PROMPT-001`, `GUARD-001`, `EVID-001`, `ANSWER-BASE-001`
 - Test reports: `harness/handoffs/RAG-QA-001.md`, `harness/handoffs/RAG-002-QA.md`, `harness/handoffs/PROMPT-QA-001.md`, `harness/handoffs/GUARD-QA-001.md`, `harness/handoffs/EVID-QA-001.md`, `harness/handoffs/ANSWER-BASE-QA-001.md`

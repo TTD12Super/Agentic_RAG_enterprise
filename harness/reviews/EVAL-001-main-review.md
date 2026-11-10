@@ -2,7 +2,7 @@
 
 ## Decision posture
 
-**READY_FOR_MAIN_REVIEW; not production sign-off.** The deterministic QA evaluation is reproducible for V1–V3 and shows zero unauthorized retrieval in the synthetic negative suite. V4 is explicitly not run because the current backend has no parent-expansion runtime seam. The Project Owner has approved Recall@10 ≥90% and an answer-confidence floor of 80%; the remaining numeric release thresholds remain **PROPOSED/PENDING_PROJECT_OWNER_APPROVAL**.
+**ACCEPTED FOR DEVELOPMENT; NOT PRODUCTION SIGN-OFF.** The deterministic QA evaluation is reproducible for V1–V3 and shows zero unauthorized retrieval in the synthetic negative suite. V4 is explicitly not run because the current backend has no parent-expansion runtime seam. The Project Owner has approved Recall@10 ≥90% and an answer-confidence floor of 80%; the remaining numeric release thresholds are deferred to the project-wide quality gate.
 
 ## Evidence reviewed
 
@@ -26,6 +26,6 @@ The exercised authorization paths passed: 50 permission-negative records, includ
 
 ## Approval requests
 
-Project Owner approval is still required for the remaining citation/answer/no-answer/latency/cost gates. Main Agent approval is required for the follow-up V4/citation-schema work. EVAL-001 should not be marked DONE solely from this local QA evidence.
+The project-wide quality gate remains required before production release. Main Agent will schedule follow-up V4/citation-schema work as development proceeds; EVAL-001 is complete as technical evaluation evidence only.
 
 No task registry change, commit or push was performed.

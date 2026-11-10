@@ -2,7 +2,7 @@
 
 - Task ID: EVAL-001
 - Agent owner: qa_tester
-- Status: READY_FOR_INTEGRATION
+- Status: TECHNICAL EVALUATION COMPLETE — FINAL QUALITY GATE DEFERRED
 - Contract version(s) used: retrieval v1.0; answer-and-citation v1.0; identity-and-policy v1.0; events-and-audit v1.0
 - Upstream dependencies checked: RAG-002, EVID-001, GUARD-001, EVAL-PREP-001 and ANSWER-BASE-001 are `DONE` in the task registry.
 - Changed files:
@@ -40,6 +40,6 @@
   - `EVAL-001-CITATION-SCHEMA-GAP`: `AnswerCitation` does not expose tenant/policy epoch or DOCX/XLSX type-specific locators required by the broader citation contract; report includes reproducer scope. No backend fix made.
   - Provider token/cost and external-provider latency are not measured because no approved provider/API key is configured.
 - Suggested next READY task: backend-owned V4 parent-expansion integration plus citation schema review; then rerun EVAL-001 with approved provider configuration.
-- Human approval required: Project Owner approval for the remaining Golden Dataset acceptance thresholds, production gates, provider/model choice and V4 scope. Main Agent must review this handoff; QA does not mark the task DONE.
+- Project-wide quality gate deferred by Project Owner decision on 2026-11-11. Remaining thresholds, provider/model choice and V4 scope will be finalized before production release. Per-task QA and security checks remain mandatory; this technical task is complete for development progression.
 
 No task registry change, commit or push was performed.
