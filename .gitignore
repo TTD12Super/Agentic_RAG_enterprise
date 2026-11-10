@@ -24,3 +24,6 @@ coverage/
 /data/processed/
 /data/cache/
 /data/exports/
+
+# Local Graphify indexes and rendered views; rebuild with scripts/sync_graph.sh.
+/graphify-out/
