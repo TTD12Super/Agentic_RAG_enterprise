@@ -2,7 +2,7 @@
 
 import unittest
 
-from _evaluation_harness import ALLOWED_STATUSES, load_validated_records
+from tests.evaluation._evaluation_harness import ALLOWED_STATUSES, load_validated_records
 
 
 class BehaviorComponentTests(unittest.TestCase):

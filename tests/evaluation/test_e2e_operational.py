@@ -2,7 +2,7 @@
 
 import unittest
 
-from _evaluation_harness import (
+from tests.evaluation._evaluation_harness import (
     answer_correctness,
     citation_accuracy,
     evaluate_case,

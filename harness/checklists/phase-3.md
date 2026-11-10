@@ -1,7 +1,7 @@
 # Phase 3 — Secure Advanced RAG
 
-- [x] Dense baseline; BM25/RRF remains in `RAG-002`
-- [ ] Reranker and optional parent-child recheck
+- [x] Dense baseline and BM25/RRF
+- [ ] Reranker and optional parent-child recheck (parent recheck remains in a later task)
 - [ ] Source span citations and answer verifier
 - [ ] Golden dataset and denied-source retrieval tests
 - [ ] Complete and test the direct answer baseline before evaluation
@@ -17,7 +17,7 @@
 - [ ] Tech Lead and human owner sign off before moving to next phase.
 
 ## Evidence links
-- Task IDs: `RAG-001`
-- Test reports: `harness/handoffs/RAG-QA-001.md`, `harness/reviews/RAG-001-main-review.md`
+- Task IDs: `RAG-001`, `RAG-002`
+- Test reports: `harness/handoffs/RAG-QA-001.md`, `harness/handoffs/RAG-002-QA.md`, `harness/reviews/RAG-001-main-review.md`, `harness/reviews/RAG-002-main-review.md`
 - ADRs: `docs/architecture/decisions/ADR-0001.md`–`ADR-0005.md`
 - Reviewer/date: Main Agent / 2026-11-10

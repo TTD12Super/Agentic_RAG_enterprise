@@ -2,7 +2,7 @@
 
 import unittest
 
-from _evaluation_harness import load_validated_records
+from tests.evaluation._evaluation_harness import load_validated_records
 
 
 class ContractIntegrationTests(unittest.TestCase):

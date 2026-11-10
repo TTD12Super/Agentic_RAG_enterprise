@@ -140,7 +140,7 @@ class DenseRetriever:
                 classification=DataClassification.INTERNAL,
             ).vectors[0]
         except Exception:
-            return DenseRetrievalResult((), "INSUFFICIENT_EVIDENCE")
+            return DenseRetrievalResult((), "ERROR")
 
         ranked: list[DenseEvidence] = []
         for record in self._index._records_for_retrieval():
@@ -178,6 +178,26 @@ class DenseRetriever:
         if not self._authorized(record, principal, policy_epoch, Action.SOURCE_DOWNLOAD.value):
             return SourceFetchResult(None, None, True)
         return SourceFetchResult(record.text, _citation(record.chunk), False)
+
+    def is_authorized(
+        self,
+        chunk_id: UUID | str,
+        principal: AuthenticatedPrincipal,
+        *,
+        policy_epoch: int,
+    ) -> bool:
+        """Check retrieval authorization without exposing candidate metadata."""
+        try:
+            parsed_chunk_id = chunk_id if isinstance(chunk_id, UUID) else UUID(str(chunk_id))
+        except (TypeError, ValueError):
+            return False
+        record = self._index._record(parsed_chunk_id)
+        return record is not None and self._authorized(
+            record,
+            principal,
+            policy_epoch,
+            Action.DOCUMENT_READ.value,
+        )
 
     def _authorized(
         self,

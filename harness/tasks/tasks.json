@@ -555,7 +555,7 @@
       "phase": 3,
       "title": "Add BM25, RRF fusion and reranking",
       "owner": "rag_engineer",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "RAG-001"
       ],

@@ -7,6 +7,15 @@ from .dense import (
     InMemoryDenseVectorIndex,
     SourceFetchResult,
 )
+from .hybrid import (
+    DeterministicRerankerAdapter,
+    HybridEvidence,
+    HybridRetrievalConfig,
+    HybridRetrievalResult,
+    HybridRetriever,
+    InMemoryBM25Index,
+    reciprocal_rank_fusion,
+)
 
 __all__ = [
     "Citation",
@@ -16,4 +25,11 @@ __all__ = [
     "DeterministicEmbeddingAdapter",
     "InMemoryDenseVectorIndex",
     "SourceFetchResult",
+    "DeterministicRerankerAdapter",
+    "HybridEvidence",
+    "HybridRetrievalConfig",
+    "HybridRetrievalResult",
+    "HybridRetriever",
+    "InMemoryBM25Index",
+    "reciprocal_rank_fusion",
 ]
