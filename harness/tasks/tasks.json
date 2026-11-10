@@ -580,7 +580,7 @@
       "phase": 3,
       "title": "Implement prompt registry and secure context builder",
       "owner": "orchestration",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "CONTRACT-001",
         "BACKEND-BOOT-001"
