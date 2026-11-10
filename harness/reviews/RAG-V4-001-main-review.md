@@ -18,7 +18,7 @@ bounded parent context without changing ranking.
   2 skipped`.
 - `compileall`, `git diff --check` and `python3 scripts/validate_harness.py`:
   PASS.
-- Graphify refreshed after implementation: `2,833 nodes`, `8,025 edges`.
+- Graphify refreshed after implementation: `2,905 nodes`, `8,329 edges`.
 
 ## Security boundary
 

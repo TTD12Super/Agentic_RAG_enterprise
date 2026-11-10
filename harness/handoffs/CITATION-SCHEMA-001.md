@@ -40,7 +40,7 @@ GRAPHIFY_BIN=/tmp/graphify-venv/bin/graphify
 $GRAPHIFY_BIN query --graph graphify-out/graph.json --query "AnswerCitation tenant policy_epoch PDF DOCX XLSX source locator citation reauthorization" --limit 20
 ```
 
-Result: exit 0; graph reported 2,737 nodes, traversed 77 nodes and displayed 58 due to the output budget.
+Result: exit 0; the final refreshed graph contains `2,905 nodes` and `8,329 edges`; the focused query traversed the expected citation/retrieval neighborhood.
 
 Focused citation/schema tests:
 
