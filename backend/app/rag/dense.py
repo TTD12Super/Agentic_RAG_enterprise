@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 import hashlib
 import math
 import re
@@ -12,10 +13,18 @@ from uuid import UUID
 from ..authorization.policy import Action, DocumentResource, PolicyEnforcementPoint
 from ..identity.models import AuthenticatedPrincipal
 from ..ingestion.lifecycle import IngestionService
-from ..knowledge.models import ChunkMetadata, SourceSpan
+from ..knowledge.models import (
+    ChunkMetadata,
+    DOCXLocator,
+    PDFLocator,
+    SourceLocator,
+    SourceSpan,
+    XLSXLocator,
+)
 from ..integrations.model_gateway import ModelGateway
 from ..models.adapters import EmbeddingRequest, EmbeddingResult
 from ..models.policy import DataClassification, ModelRoute
+from .parent_child import ParentRecord
 
 
 _TOKEN = re.compile(r"[\w]+", re.UNICODE)
@@ -44,9 +53,41 @@ class Citation:
     chunk_id: str
     document_id: str
     version_id: str
-    page_start: int | None
-    page_end: int | None
-    source_span: SourceSpan | None
+    tenant_id: str
+    policy_epoch: int
+    locator: SourceLocator | None
+    parent_chunk_id: str | None = None
+    audience: str = "answer-client"
+    expires_at: datetime | None = None
+
+    def __post_init__(self) -> None:
+        for name in ("chunk_id", "document_id", "version_id", "tenant_id"):
+            if not isinstance(getattr(self, name), str) or not getattr(self, name).strip():
+                raise ValueError(f"{name} must be a non-empty string")
+        if isinstance(self.policy_epoch, bool) or not isinstance(self.policy_epoch, int) or self.policy_epoch < 0:
+            raise ValueError("policy_epoch must be a non-negative integer")
+        if self.parent_chunk_id is not None and (
+            not isinstance(self.parent_chunk_id, str) or not self.parent_chunk_id.strip()
+        ):
+            raise ValueError("parent_chunk_id must be a non-empty string when present")
+        if not isinstance(self.audience, str) or not self.audience.strip():
+            raise ValueError("audience must be a non-empty string")
+        if self.expires_at is not None and (
+            not isinstance(self.expires_at, datetime) or self.expires_at.tzinfo is None
+        ):
+            raise ValueError("expires_at must be timezone-aware when present")
+
+    @property
+    def page_start(self) -> int | None:
+        return self.locator.page if hasattr(self.locator, "page") else None
+
+    @property
+    def page_end(self) -> int | None:
+        return self.page_start
+
+    @property
+    def source_span(self) -> SourceSpan | None:
+        return self.locator.source_span if hasattr(self.locator, "source_span") else None
 
 
 @dataclass(frozen=True, slots=True)
@@ -146,9 +187,11 @@ class DenseRetriever:
         for record in self._index._records_for_retrieval():
             if not self._authorized(record, principal, policy_epoch, Action.DOCUMENT_READ.value):
                 continue
+            if not _valid_locator(record.chunk.source_locator):
+                continue
             ranked.append(
                 DenseEvidence(
-                    citation=_citation(record.chunk),
+                    citation=_citation(record.chunk, policy_epoch),
                     score=_cosine(query_vector, record.vector),
                     text=record.text,
                 )
@@ -177,7 +220,9 @@ class DenseRetriever:
             return SourceFetchResult(None, None, True)
         if not self._authorized(record, principal, policy_epoch, Action.SOURCE_DOWNLOAD.value):
             return SourceFetchResult(None, None, True)
-        return SourceFetchResult(record.text, _citation(record.chunk), False)
+        if not _valid_locator(record.chunk.source_locator):
+            return SourceFetchResult(None, None, True)
+        return SourceFetchResult(record.text, _citation(record.chunk, policy_epoch), False)
 
     def is_authorized(
         self,
@@ -197,6 +242,31 @@ class DenseRetriever:
             principal,
             policy_epoch,
             Action.DOCUMENT_READ.value,
+        )
+
+    def parent_record(self, chunk_id: UUID | str) -> ParentRecord | None:
+        """Return an internal parent candidate; callers must authorize it before use."""
+        try:
+            parsed_chunk_id = chunk_id if isinstance(chunk_id, UUID) else UUID(str(chunk_id))
+        except (TypeError, ValueError):
+            return None
+        record = self._index._record(parsed_chunk_id)
+        if record is None:
+            return None
+        resource = self._documents.get(str(record.chunk.document_id))
+        if resource is None:
+            return None
+        return ParentRecord(
+            chunk_id=str(record.chunk.chunk_id),
+            tenant_id=str(record.chunk.tenant_id),
+            document_id=str(record.chunk.document_id),
+            version_id=str(record.chunk.version_id),
+            text=record.text,
+            source_locator=record.chunk.source_locator,
+            status=resource.status,
+            document_status=resource.status,
+            version_status=resource.version_status,
+            index_state=record.chunk.index_state,
         )
 
     def _authorized(
@@ -251,15 +321,20 @@ def _uuid(value: str) -> UUID | None:
         return None
 
 
-def _citation(chunk: ChunkMetadata) -> Citation:
+def _citation(chunk: ChunkMetadata, policy_epoch: int) -> Citation:
     return Citation(
         chunk_id=str(chunk.chunk_id),
         document_id=str(chunk.document_id),
         version_id=str(chunk.version_id),
-        page_start=chunk.page_start,
-        page_end=chunk.page_end,
-        source_span=chunk.source_span,
+        tenant_id=str(chunk.tenant_id),
+        policy_epoch=policy_epoch,
+        locator=chunk.source_locator,
+        parent_chunk_id=(str(chunk.parent_chunk_id) if chunk.parent_chunk_id is not None else None),
     )
+
+
+def _valid_locator(locator: object) -> bool:
+    return isinstance(locator, (PDFLocator, DOCXLocator, XLSXLocator))
 
 
 def _vectorize(text: str) -> tuple[float, ...]:

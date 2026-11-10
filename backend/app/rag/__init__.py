@@ -24,6 +24,13 @@ from .answer import (
     DirectAnswerPipeline,
     GeneratedAnswer,
 )
+from .parent_child import (
+    ChildEvidence,
+    ParentEvidence,
+    ParentExpansionResult,
+    ParentRecord,
+    expand_parent_context,
+)
 
 __all__ = [
     "Citation",
@@ -46,4 +53,9 @@ __all__ = [
     "AnswerStatus",
     "DirectAnswerPipeline",
     "GeneratedAnswer",
+    "ChildEvidence",
+    "ParentEvidence",
+    "ParentExpansionResult",
+    "ParentRecord",
+    "expand_parent_context",
 ]

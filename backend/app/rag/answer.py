@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from enum import StrEnum
 import hashlib
+import json
 from typing import Protocol
 
 from backend.app.evidence import (
@@ -26,6 +28,7 @@ from backend.app.guardrails import (
     validate_output,
 )
 from backend.app.identity.models import AuthenticatedPrincipal
+from backend.app.knowledge.models import DOCXLocator, PDFLocator, SourceLocator, XLSXLocator
 from backend.app.models.policy import DataClassification
 from backend.app.orchestration.context import RetrievedEvidence, build_secure_context
 
@@ -67,12 +70,65 @@ class AnswerModelGateway(Protocol):
 @dataclass(frozen=True, slots=True)
 class AnswerCitation:
     citation_id: str
+    tenant_id: str
     document_id: str
     version_id: str
-    page: int | None
-    source_span: tuple[int, int]
+    policy_epoch: int
+    audience: str
+    expires_at: datetime
+    locator: SourceLocator
     evidence_snapshot_hash: str
     chunk_id: str
+
+    def __post_init__(self) -> None:
+        for name in ("citation_id", "tenant_id", "document_id", "version_id", "chunk_id"):
+            if not isinstance(getattr(self, name), str) or not getattr(self, name).strip():
+                raise ValueError(f"{name} must be a non-empty string")
+        if isinstance(self.policy_epoch, bool) or not isinstance(self.policy_epoch, int) or self.policy_epoch < 0:
+            raise ValueError("policy_epoch must be a non-negative integer")
+        if not isinstance(self.audience, str) or not self.audience.strip():
+            raise ValueError("audience must be a non-empty string")
+        if not isinstance(self.expires_at, datetime) or self.expires_at.tzinfo is None:
+            raise ValueError("expires_at must be timezone-aware")
+        if not _valid_locator(self.locator):
+            raise ValueError("citation locator is malformed")
+        if len(self.evidence_snapshot_hash) != 64 or any(
+            char not in "0123456789abcdef" for char in self.evidence_snapshot_hash
+        ):
+            raise ValueError("evidence_snapshot_hash must be a lowercase SHA-256 digest")
+
+    @property
+    def page(self) -> int | None:
+        return self.locator.page if isinstance(self.locator, PDFLocator) else None
+
+    @property
+    def source_span(self) -> tuple[int, int] | None:
+        if not isinstance(self.locator, PDFLocator):
+            return None
+        return (self.locator.source_span.start, self.locator.source_span.end)
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "citation_id": self.citation_id,
+            "tenant_id": self.tenant_id,
+            "document_id": self.document_id,
+            "version_id": self.version_id,
+            "policy_epoch": self.policy_epoch,
+            "audience": self.audience,
+            "expires_at": _utc_z(self.expires_at),
+            "locator": self.locator.model_dump(mode="json"),
+            "page": self.page,
+            "source_span": (
+                {"start": self.source_span[0], "end": self.source_span[1]}
+                if self.source_span is not None
+                else None
+            ),
+            "evidence_snapshot_hash": self.evidence_snapshot_hash,
+            "chunk_id": self.chunk_id,
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":"))
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,6 +161,7 @@ class DirectAnswerPipeline:
         self._authorize_citation = authorize_citation
         self._verifier = EvidenceVerifier(authorize_citation)
         self._top_k = top_k
+        self._citation_expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
 
     def answer(
         self,
@@ -135,7 +192,10 @@ class DirectAnswerPipeline:
                 answer="Insufficient evidence to answer this question.",
             )
 
-        evidence_records = self._authorized_evidence(retrieval.evidence, principal.tenant_id)
+        all_evidence = retrieval.evidence + retrieval.expanded_context
+        evidence_records, citation_metadata = self._authorized_evidence(
+            all_evidence, principal.tenant_id, policy_epoch
+        )
         if not evidence_records:
             return self._failure(
                 AnswerStatus.INSUFFICIENT_EVIDENCE,
@@ -151,7 +211,11 @@ class DirectAnswerPipeline:
                 text=record.text,
                 page_start=record.citation.page,
                 page_end=record.citation.page,
-                source_span=(record.citation.source_span.start, record.citation.source_span.end),
+                source_span=(
+                    (record.citation.source_span.start, record.citation.source_span.end)
+                    if record.citation.source_span is not None
+                    else None
+                ),
                 retrieval_method="hybrid",
             )
             for record in evidence_records.values()
@@ -214,7 +278,11 @@ class DirectAnswerPipeline:
             status=status,
             answer=checked_output.value,
             citations=tuple(
-                _answer_citation(evidence_records[citation_id])
+                _answer_citation(
+                    evidence_records[citation_id],
+                    citation_metadata[citation_id],
+                    default_expires_at=self._citation_expires_at,
+                )
                 for citation_id in unique_supported_ids
                 if citation_id in evidence_records
             ),
@@ -225,33 +293,45 @@ class DirectAnswerPipeline:
         self,
         evidence: tuple[HybridEvidence, ...],
         tenant_id: str,
-    ) -> dict[str, EvidenceRecord]:
+        policy_epoch: int,
+    ) -> tuple[dict[str, EvidenceRecord], dict[str, object]]:
         authorized: dict[str, EvidenceRecord] = {}
+        metadata: dict[str, object] = {}
         for index, item in enumerate(evidence, 1):
-            inspected = inspect_untrusted_content(item.text)
-            if not inspected.allowed or inspected.value is None:
-                continue
-            source_span = item.citation.source_span
-            if source_span is None:
-                continue
-            citation_id = f"c-{index}"
-            citation = CitationRecord(
-                citation_id=citation_id,
-                document_id=item.citation.document_id,
-                version_id=item.citation.version_id,
-                tenant_id=tenant_id,
-                page=item.citation.page_start,
-                source_span=VerificationSourceSpan(source_span.start, source_span.end),
-                chunk_id=item.citation.chunk_id,
-            )
             try:
+                source = item.citation
+                if (
+                    source.tenant_id != tenant_id
+                    or source.policy_epoch != policy_epoch
+                    or not _valid_locator(source.locator)
+                    or _expired(source.expires_at)
+                ):
+                    continue
+                inspected = inspect_untrusted_content(item.text)
+                if not inspected.allowed or inspected.value is None:
+                    continue
+                # EvidenceVerifier still requires a span; the typed locator remains the output authority.
+                source_span = source.source_span or VerificationSourceSpan(
+                    0, max(1, len(inspected.value))
+                )
+                citation_id = f"c-{index}"
+                citation = CitationRecord(
+                    citation_id=citation_id,
+                    document_id=source.document_id,
+                    version_id=source.version_id,
+                    tenant_id=source.tenant_id,
+                    page=source.page_start,
+                    source_span=VerificationSourceSpan(source_span.start, source_span.end),
+                    chunk_id=source.chunk_id,
+                )
                 decision = self._authorize_citation(citation)
             except Exception:
                 continue
             if not _authorization_matches(decision, citation):
                 continue
             authorized[citation_id] = EvidenceRecord(citation, inspected.value)
-        return authorized
+            metadata[citation_id] = item.citation
+        return authorized, metadata
 
     @staticmethod
     def _failure(
@@ -285,17 +365,43 @@ def _authorization_matches(
     )
 
 
-def _answer_citation(evidence: EvidenceRecord) -> AnswerCitation:
+def _answer_citation(
+    evidence: EvidenceRecord,
+    metadata: object,
+    *,
+    default_expires_at: datetime,
+) -> AnswerCitation:
     citation = evidence.citation
+    if not hasattr(metadata, "locator") or not _valid_locator(metadata.locator):
+        raise ValueError("citation locator is malformed")
     return AnswerCitation(
         citation_id=citation.citation_id,
+        tenant_id=citation.tenant_id,
         document_id=citation.document_id,
         version_id=citation.version_id,
-        page=citation.page,
-        source_span=(citation.source_span.start, citation.source_span.end),
+        policy_epoch=metadata.policy_epoch,
+        audience=getattr(metadata, "audience", "answer-client"),
+        expires_at=(
+            metadata.expires_at
+            if getattr(metadata, "expires_at", None) is not None
+            else default_expires_at
+        ),
+        locator=metadata.locator,
         evidence_snapshot_hash=hashlib.sha256(evidence.text.encode("utf-8")).hexdigest(),
         chunk_id=citation.chunk_id or citation.citation_id,
     )
+
+
+def _valid_locator(locator: object) -> bool:
+    return isinstance(locator, (PDFLocator, DOCXLocator, XLSXLocator))
+
+
+def _expired(value: object) -> bool:
+    return isinstance(value, datetime) and value.tzinfo is not None and value <= datetime.now(timezone.utc)
+
+
+def _utc_z(value: datetime) -> str:
+    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 __all__ = [

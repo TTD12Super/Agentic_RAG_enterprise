@@ -11,10 +11,11 @@ from uuid import UUID
 
 from ..identity.models import AuthenticatedPrincipal
 from ..integrations.model_gateway import ModelGateway
-from ..knowledge.models import ChunkMetadata
+from ..knowledge.models import ChunkMetadata, DOCXLocator, PDFLocator, XLSXLocator
 from ..models.adapters import RankedDocument, RerankerRequest, RerankerResult
 from ..models.policy import DataClassification, ModelRoute
 from .dense import Citation, DenseRetriever, SourceFetchResult
+from .parent_child import ChildEvidence, expand_parent_context
 
 
 _TOKEN = re.compile(r"[\w]+", re.UNICODE)
@@ -74,6 +75,7 @@ class HybridEvidence:
 class HybridRetrievalResult:
     evidence: tuple[HybridEvidence, ...]
     status: str
+    expanded_context: tuple[HybridEvidence, ...] = ()
 
 
 def reciprocal_rank_fusion(
@@ -198,6 +200,7 @@ class HybridRetriever:
         return HybridRetrievalResult(
             tuple(evidence),
             "OK" if evidence else "ERROR",
+            self._expand_parent_context(tuple(evidence), principal, policy_epoch),
         )
 
     def fetch_source(
@@ -208,6 +211,68 @@ class HybridRetriever:
         policy_epoch: int,
     ) -> SourceFetchResult:
         return self._dense.fetch_source(chunk_id, principal, policy_epoch=policy_epoch)
+
+    def _expand_parent_context(
+        self,
+        evidence: tuple[HybridEvidence, ...],
+        principal: AuthenticatedPrincipal,
+        policy_epoch: int,
+    ) -> tuple[HybridEvidence, ...]:
+        children = tuple(
+            ChildEvidence(
+                chunk_id=item.citation.chunk_id,
+                tenant_id=item.citation.tenant_id,
+                document_id=item.citation.document_id,
+                version_id=item.citation.version_id,
+                text=item.text,
+                citation=item.citation,
+                parent_chunk_id=item.citation.parent_chunk_id,
+            )
+            for item in evidence
+        )
+        parent_records = tuple(
+            record
+            for child in children
+            if child.parent_chunk_id
+            for record in (self._dense.parent_record(child.parent_chunk_id),)
+            if record is not None
+        )
+        try:
+            expansion = expand_parent_context(
+                children,
+                parent_records,
+                lambda parent: self._dense.is_authorized(
+                    parent.chunk_id,
+                    principal,
+                    policy_epoch=policy_epoch,
+                ),
+            )
+        except Exception:
+            return ()
+        child_ids = {item.citation.chunk_id for item in evidence}
+        expanded: list[HybridEvidence] = []
+        for parent in expansion.parents:
+            if parent.parent_chunk_id in child_ids:
+                continue
+            if not isinstance(parent.source_locator, (PDFLocator, DOCXLocator, XLSXLocator)):
+                continue
+            expanded.append(
+                HybridEvidence(
+                    citation=Citation(
+                        chunk_id=parent.parent_chunk_id,
+                        document_id=parent.document_id,
+                        version_id=parent.version_id,
+                        tenant_id=parent.tenant_id,
+                        policy_epoch=policy_epoch,
+                        locator=parent.source_locator,
+                    ),
+                    score=0.0,
+                    text=parent.text,
+                    rrf_score=0.0,
+                    rerank_score=0.0,
+                )
+            )
+        return tuple(expanded)
 
     def _bm25_search(
         self,
@@ -225,7 +290,8 @@ class HybridRetriever:
         authorized_records = tuple(
             record
             for record in records
-            if self._dense.is_authorized(
+            if record.chunk.source_locator is not None
+            and self._dense.is_authorized(
                 record.chunk.chunk_id,
                 principal,
                 policy_epoch=policy_epoch,
@@ -250,7 +316,7 @@ class HybridRetriever:
                 average_length,
             )
             if score > 0:
-                scored.append((_citation(record.chunk), record.text, score))
+                scored.append((_citation(record.chunk, policy_epoch), record.text, score))
         scored.sort(key=lambda item: (-item[2], item[0].chunk_id))
         return tuple(scored[:top_k])
 
@@ -297,14 +363,15 @@ class HybridRetriever:
         )
 
 
-def _citation(chunk: ChunkMetadata) -> Citation:
+def _citation(chunk: ChunkMetadata, policy_epoch: int) -> Citation:
     return Citation(
         chunk_id=str(chunk.chunk_id),
         document_id=str(chunk.document_id),
         version_id=str(chunk.version_id),
-        page_start=chunk.page_start,
-        page_end=chunk.page_end,
-        source_span=chunk.source_span,
+        tenant_id=str(chunk.tenant_id),
+        policy_epoch=policy_epoch,
+        locator=chunk.source_locator,
+        parent_chunk_id=(str(chunk.parent_chunk_id) if chunk.parent_chunk_id is not None else None),
     )
 
 

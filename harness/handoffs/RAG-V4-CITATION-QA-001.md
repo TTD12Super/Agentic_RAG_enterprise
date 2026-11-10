@@ -1,0 +1,31 @@
+# Handoff — RAG-V4-CITATION-QA-001 / QA agent
+
+- Task ID: RAG-V4-CITATION-QA-001
+- Agent owner: QA agent
+- Status: READY_FOR_INTEGRATION
+- Contract version(s) used: Retrieval v1.0; Answer & citation v1.0; Shared Contract Baseline v1.0
+- Upstream dependencies checked: `AGENTS.md`, `tests/AGENTS.md`, `docs/testing/README.md`, `docs/contracts/answer-and-citation.md`, `docs/contracts/retrieval.md`, `docs/contracts/v1-baseline.md`, Graphify report/query, V4 runtime, citation schema, existing parent/dense/hybrid/answer tests.
+- Changed files:
+  - `tests/qa/rag_v4_citation/test_behavior_component.py`
+  - `tests/qa/rag_v4_citation/test_contract_integration.py`
+  - `tests/qa/rag_v4_citation/test_security_adversarial.py`
+  - `tests/qa/rag_v4_citation/test_e2e_operational.py`
+  - `harness/handoffs/RAG-V4-CITATION-QA-001.md`
+- Production files changed: none. Task registry and contract docs changed: none.
+- New/updated tests: exactly 40 new cases, 10 per required family.
+  - Behavior/component: parent expansion after rerank, child preservation, dedupe/provenance, deterministic ordering, parent/character bounds, malformed child, invalid limits, callback failure, and lifecycle/index ACTIVE checks.
+  - Contract/integration: backward-compatible result envelope, runtime separation of ranked/context evidence, PDF/DOCX/XLSX typed locator propagation, secure answer context, citation serialization, version-bound source fetch, policy epoch propagation and Qdrant locator projection.
+  - Security/adversarial: tenant/document/version isolation, inactive/staging lifecycle denial, explicit parent deny, policy callback outage, malformed locator omission, cross-tenant citation denial and prompt-injection escaping.
+  - E2E/operational: full hybrid parent expansion, answer-context consumption, typed PDF/DOCX/XLSX delivery, expiry enforcement, audience propagation, snapshot hash, reranker failure, policy outage and recovery.
+- Commands actually executed + exit status:
+  - `sed -n '1,260p' graphify-out/GRAPH_REPORT.md` — exit 0.
+  - `jq '{...relevant_nodes/relevant_links...}' graphify-out/graph.json` — initial query shape was invalid for this Graphify JSON (`exit 5`); schema was inspected and corrected.
+  - `/tmp/graphify-venv/bin/graphify query "expand_parent_context HybridRetriever AnswerCitation tenant policy_epoch locator" --graph graphify-out/graph.json --budget 2578` — exit 0; resolved `AnswerCitation`, `HybridRetriever`, `expand_parent_context()`, `ParentRecord`, `ParentEvidence`, locator and authorization nodes.
+  - `/tmp/know-venv/bin/python -m pytest --import-mode=importlib tests/qa/rag_v4_citation/test_behavior_component.py tests/qa/rag_v4_citation/test_contract_integration.py tests/qa/rag_v4_citation/test_security_adversarial.py tests/qa/rag_v4_citation/test_e2e_operational.py -q` — first collection attempt exit 2 due three QA imports using the wrong module path for `AuthorizationDecision`; fixed in QA files only.
+  - Same four-file pytest command after the QA-only import fix — exit 0; `40 passed in 0.17s`.
+  - `/tmp/know-venv/bin/python -m pytest --import-mode=importlib backend/tests/test_parent_child.py backend/tests/test_answer_citations.py backend/tests/test_dense_retrieval.py backend/tests/test_hybrid_retrieval.py tests/integration/test_answer_citation_schema.py -q` — exit 0; `30 passed in 0.15s`.
+- Security implications (ACL, tenant, PII, injections, tools): Tests confirm parent expansion is fail-closed and cannot broaden a child scope. Cross-tenant, cross-document, cross-version, stale, revoked, staging, denied and policy-outage parents are omitted without parent text disclosure. Answer citations require tenant and `policy_epoch` alignment, current authorization, valid typed locator, non-expired reference and immutable snapshot hash. Parent prompt injection is escaped inside the untrusted-content envelope. Fixtures are synthetic; no secrets, external calls or real documents are used.
+- Integration steps: Main Agent should review this matrix, keep production implementation unchanged unless an independent review finds a defect, and attach this handoff to the V4/citation integration decision. No commit or push was performed.
+- Known limitations / blockers with IDs: No `FINDING_BLOCKER` observed in the executed scope. The suite uses deterministic in-memory adapters and does not replace live PostgreSQL/Qdrant/object-storage/provider validation.
+- Suggested next READY task: Main Agent integration review, then proceed to the next phase while retaining the final production quality gate as deferred per owner decision.
+- Human approval required: Main Agent acceptance of QA evidence; no Project Owner escalation is required from this QA run.

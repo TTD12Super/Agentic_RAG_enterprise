@@ -4,7 +4,7 @@ The normative citation-location, version-binding and source reauthorization rule
 
 ## Answer
 ```json
-{"answer":"...","status":"ANSWERED","citations":[{"citation_id":"c-1","document_id":"doc-42","version_id":"v-2","page":4,"source_span":{"start":101,"end":412},"evidence_snapshot_hash":"hex","chunk_id":"chunk-77"}],"missing_information":[],"traceparent":"00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01","policy_epoch":42}
+{"answer":"...","status":"ANSWERED","citations":[{"citation_id":"c-1","tenant_id":"tenant-a","document_id":"doc-42","version_id":"v-2","locator":{"kind":"PDF","page":4,"source_span":{"start":101,"end":412}},"evidence_snapshot_hash":"hex","chunk_id":"chunk-77","policy_epoch":42,"audience":"answer-client","expires_at":"2026-11-10T10:05:00Z"}],"missing_information":[],"traceparent":"00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"}
 ```
 Allowed status: ANSWERED, PARTIAL, INSUFFICIENT_EVIDENCE, ACCESS_DENIED, ERROR.
 

@@ -105,14 +105,14 @@ Retrieval is authorized before dense and lexical search, after fusion/reranking,
 Citation locations are version-bound and carry an immutable evidence snapshot hash. The locator is a discriminated object, not a free-form page/span pair:
 
 ```json
-{"kind":"PDF","page":4,"char_start":101,"char_end":412}
-{"kind":"DOCX","section_id":"sec-2","paragraph_id":"p-17","char_start":0,"char_end":180}
-{"kind":"XLSX","sheet":"Revenue","cell_range":"B4:F12","value_span":"B4:F12"}
+{"kind":"PDF","page":4,"source_span":{"start":101,"end":412}}
+{"kind":"DOCX","heading":"Security policy","paragraph":17}
+{"kind":"XLSX","sheet":"Revenue","cell_range":"B4:F12"}
 ```
 
 - PDF: page number plus UTF-8 character span within the normalized page text.
-- DOCX: section/paragraph identifier plus normalized character span.
-- XLSX: workbook sheet name plus bounded cell range and optional displayed-value span.
+- DOCX: stable heading plus paragraph number in the normalized document.
+- XLSX: workbook sheet name plus bounded A1 cell range.
 
 Citation references include `tenant_id`, immutable `document_version_id`, source locator, evidence snapshot hash, `policy_epoch`, audience and expiry. The server performs a fresh `document:read` check for preview and a separate `source:download` check for original files. A revoked, superseded or nonexistent source returns a safe unavailable response and never substitutes a newer version.
 

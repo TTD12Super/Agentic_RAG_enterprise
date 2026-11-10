@@ -12,6 +12,7 @@ from backend.app.authorization.policy import (
 )
 from backend.app.ingestion.lifecycle import IngestionService
 from backend.app.integrations.model_gateway import ModelGateway
+from backend.app.knowledge.models import PDFLocator, SourceSpan
 from backend.app.models.policy import (
     DataClassification,
     EgressMode,
@@ -29,6 +30,7 @@ from backend.app.rag.hybrid import (
     reciprocal_rank_fusion,
 )
 from backend.tests.test_dense_retrieval import _active_document, _principal, _resource
+from backend.tests._ingestion_fixtures import active, make_manifest
 
 
 def _gateway() -> ModelGateway:
@@ -92,6 +94,72 @@ def _make_retriever(
         config=HybridRetrievalConfig(branch_top_k=20, rrf_k=60, rerank_top_k=20),
     )
     return hybrid, principal, ingestion, tenant_id, chunks
+
+
+def _make_parent_child_retriever() -> tuple[HybridRetriever, object, str, str]:
+    tenant_id = uuid4()
+    department_id = uuid4()
+    ingestion = IngestionService()
+    manifest = make_manifest(
+        tenant_id=tenant_id,
+        classification=DataClassification.INTERNAL,
+        owner_department_id=department_id,
+    )
+    manifest, _, version = active(ingestion, manifest)
+    parent, child = version.chunks
+    indexed_parent = parent.model_copy(
+        update={
+            "page_start": 1,
+            "source_span": SourceSpan(start=0, end=30),
+            "source_locator": PDFLocator(page=1, source_span=SourceSpan(start=0, end=30)),
+        }
+    )
+    indexed_child = child.model_copy(
+        update={
+            "page_start": 2,
+            "source_span": SourceSpan(start=0, end=44),
+            "source_locator": PDFLocator(page=2, source_span=SourceSpan(start=0, end=44)),
+        }
+    )
+    gateway = _gateway()
+    dense_index = InMemoryDenseVectorIndex(gateway)
+    bm25_index = InMemoryBM25Index()
+    dense_index.upsert(
+        indexed_parent,
+        "General policy context for chapter seven.",
+        classification=DataClassification.INTERNAL,
+    )
+    bm25_index.upsert(indexed_parent, "General policy context for chapter seven.")
+    dense_index.upsert(
+        indexed_child,
+        "Warranty coverage applies for twelve months.",
+        classification=DataClassification.INTERNAL,
+    )
+    bm25_index.upsert(indexed_child, "Warranty coverage applies for twelve months.")
+    principal = _principal(tenant_id, department_id)
+    pep = PolicyEnforcementPoint(
+        AuthorizationEvaluator(policy_store=InMemoryPolicyStore(policy_epoch=7))
+    )
+    dense = DenseRetriever(
+        index=dense_index,
+        ingestion=ingestion,
+        pep=pep,
+        documents={
+            str(manifest.document_id): _resource(
+                manifest.document_id,
+                manifest.version_id,
+                tenant_id,
+                department_id,
+            )
+        },
+        model_gateway=gateway,
+    )
+    return (
+        HybridRetriever(dense=dense, bm25=bm25_index, model_gateway=gateway),
+        principal,
+        str(parent.chunk_id),
+        str(child.chunk_id),
+    )
 
 
 def test_rrf_uses_each_branch_rank_and_deduplicates_within_a_branch():
@@ -196,3 +264,20 @@ def test_bm25_branch_filters_tenant_acl_active_and_policy_before_scoring():
     assert {item.citation.document_id for item in result.evidence} == {str(allowed[0])}
     assert all(item.citation.document_id != str(cross_tenant[0]) for item in result.evidence)
     assert hybrid.fetch_source(denied[3].chunk_id, principal, policy_epoch=7).redacted
+
+
+def test_hybrid_runtime_expands_authorized_parent_after_reranking():
+    hybrid, principal, parent_id, child_id = _make_parent_child_retriever()
+
+    result = hybrid.search(
+        "Warranty coverage applies for twelve months",
+        principal,
+        policy_epoch=7,
+        top_k=1,
+    )
+
+    assert result.status == "OK"
+    assert [item.citation.chunk_id for item in result.evidence] == [child_id]
+    assert len(result.expanded_context) == 1
+    assert result.expanded_context[0].citation.chunk_id == parent_id
+    assert result.expanded_context[0].text == "General policy context for chapter seven."

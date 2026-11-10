@@ -3,9 +3,13 @@
 from .models import (
     ChunkMetadata,
     Classification,
+    DOCXLocator,
     DocumentMetadata,
     DocumentVersionMetadata,
+    PDFLocator,
+    SourceLocator,
     SourceSpan,
+    XLSXLocator,
     inherit_acl,
     to_qdrant_payload,
 )
@@ -13,9 +17,13 @@ from .models import (
 __all__ = [
     "ChunkMetadata",
     "Classification",
+    "DOCXLocator",
     "DocumentMetadata",
     "DocumentVersionMetadata",
+    "PDFLocator",
+    "SourceLocator",
     "SourceSpan",
+    "XLSXLocator",
     "inherit_acl",
     "to_qdrant_payload",
 ]

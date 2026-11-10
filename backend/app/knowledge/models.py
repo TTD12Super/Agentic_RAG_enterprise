@@ -8,7 +8,8 @@ payload; they do not make authorization decisions.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+import re
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -49,6 +50,51 @@ class SourceSpan(_ImmutableModel):
         if self.end <= self.start:
             raise ValueError("source span end must be greater than start")
         return self
+
+
+class PDFLocator(_ImmutableModel):
+    kind: Literal["PDF"] = "PDF"
+    page: int = Field(gt=0)
+    source_span: SourceSpan
+
+
+class DOCXLocator(_ImmutableModel):
+    kind: Literal["DOCX"] = "DOCX"
+    heading: str = Field(min_length=1)
+    paragraph: int = Field(gt=0)
+
+    @field_validator("heading")
+    @classmethod
+    def valid_heading(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("heading must not be empty")
+        return value
+
+
+class XLSXLocator(_ImmutableModel):
+    kind: Literal["XLSX"] = "XLSX"
+    sheet: str = Field(min_length=1)
+    cell_range: str = Field(min_length=1)
+
+    @field_validator("sheet")
+    @classmethod
+    def valid_sheet(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("sheet must not be empty")
+        return value
+
+    @field_validator("cell_range")
+    @classmethod
+    def valid_cell_range(cls, value: str) -> str:
+        value = value.strip().upper()
+        if not re.fullmatch(r"[A-Z]{1,3}[1-9][0-9]*(?::[A-Z]{1,3}[1-9][0-9]*)?", value):
+            raise ValueError("cell_range must be a bounded A1-style range")
+        return value
+
+
+SourceLocator = Annotated[PDFLocator | DOCXLocator | XLSXLocator, Field(discriminator="kind")]
 
 
 class DocumentMetadata(_ImmutableModel):
@@ -117,6 +163,7 @@ class ChunkMetadata(_ImmutableModel):
     page_start: int | None = Field(default=None, gt=0)
     page_end: int | None = Field(default=None, gt=0)
     source_span: SourceSpan | None = None
+    source_locator: SourceLocator | None = None
     acl_policy_ref: str | None = Field(default=None, min_length=1)
     text_hash: str = Field(min_length=64, max_length=64)
     index_state: IndexState = "STAGING"
@@ -136,6 +183,17 @@ class ChunkMetadata(_ImmutableModel):
             raise ValueError("page_end must be greater than or equal to page_start")
         if self.index_state == "ACTIVE" and self.acl_policy_ref is None:
             raise ValueError("an active chunk must carry inherited ACL metadata")
+        if self.source_locator is None and self.page_start is not None and self.source_span is not None:
+            object.__setattr__(
+                self,
+                "source_locator",
+                PDFLocator(page=self.page_start, source_span=self.source_span),
+            )
+        if isinstance(self.source_locator, PDFLocator):
+            if self.page_start is not None and self.page_start != self.source_locator.page:
+                raise ValueError("PDF locator page must match page_start")
+            if self.source_span is not None and self.source_span != self.source_locator.source_span:
+                raise ValueError("PDF locator source_span must match source_span")
         return self
 
 
@@ -181,4 +239,6 @@ def to_qdrant_payload(chunk: ChunkMetadata) -> dict[str, object]:
         payload["page_end"] = chunk.page_end
     if chunk.source_span is not None:
         payload["source_span"] = chunk.source_span.model_dump()
+    if chunk.source_locator is not None:
+        payload["source_locator"] = chunk.source_locator.model_dump(mode="json")
     return payload
