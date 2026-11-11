@@ -316,7 +316,7 @@ class HybridRetriever:
                 average_length,
             )
             if score > 0:
-                scored.append((_citation(record.chunk, policy_epoch), record.text, score))
+                scored.append((_citation(record.chunk, policy_epoch, tenant_id=principal.tenant_id), record.text, score))
         scored.sort(key=lambda item: (-item[2], item[0].chunk_id))
         return tuple(scored[:top_k])
 
@@ -363,12 +363,12 @@ class HybridRetriever:
         )
 
 
-def _citation(chunk: ChunkMetadata, policy_epoch: int) -> Citation:
+def _citation(chunk: ChunkMetadata, policy_epoch: int, *, tenant_id: str | None = None) -> Citation:
     return Citation(
         chunk_id=str(chunk.chunk_id),
         document_id=str(chunk.document_id),
         version_id=str(chunk.version_id),
-        tenant_id=str(chunk.tenant_id),
+        tenant_id=tenant_id or str(chunk.tenant_id),
         policy_epoch=policy_epoch,
         locator=chunk.source_locator,
         parent_chunk_id=(str(chunk.parent_chunk_id) if chunk.parent_chunk_id is not None else None),

@@ -830,6 +830,9 @@ class ChatService:
                 traceparent="00-" + secrets.token_hex(16) + "-" + secrets.token_hex(8) + "-01",
                 deadline_at=running.workflow_deadline_at,
             )
+            bind_context = getattr(self.executor, "bind_context", None)
+            if callable(bind_context):
+                bind_context(request.principal_ref, actor.principal, actor.scope.policy_epoch)
             raw = self.executor.run(request)
         except TimeoutError:
             return self.repository.fail_job(job_id, scope=actor.scope, error_code="TIMEOUT")

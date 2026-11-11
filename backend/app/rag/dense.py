@@ -8,7 +8,7 @@ import hashlib
 import math
 import re
 from typing import Mapping
-from uuid import UUID
+from uuid import NAMESPACE_URL, UUID, uuid5
 
 from ..authorization.policy import Action, DocumentResource, PolicyEnforcementPoint
 from ..identity.models import AuthenticatedPrincipal
@@ -29,6 +29,7 @@ from .parent_child import ParentRecord
 
 _TOKEN = re.compile(r"[\w]+", re.UNICODE)
 _DIMENSIONS = 32
+_PUBLIC_TENANT_UUID = uuid5(NAMESPACE_URL, "enterprise-agentic-rag:public")
 
 
 class DeterministicEmbeddingAdapter:
@@ -191,7 +192,7 @@ class DenseRetriever:
                 continue
             ranked.append(
                 DenseEvidence(
-                    citation=_citation(record.chunk, policy_epoch),
+                    citation=_citation(record.chunk, policy_epoch, tenant_id=principal.tenant_id),
                     score=_cosine(query_vector, record.vector),
                     text=record.text,
                 )
@@ -222,7 +223,7 @@ class DenseRetriever:
             return SourceFetchResult(None, None, True)
         if not _valid_locator(record.chunk.source_locator):
             return SourceFetchResult(None, None, True)
-        return SourceFetchResult(record.text, _citation(record.chunk, policy_epoch), False)
+        return SourceFetchResult(record.text, _citation(record.chunk, policy_epoch, tenant_id=principal.tenant_id), False)
 
     def is_authorized(
         self,
@@ -315,18 +316,20 @@ class DenseRetriever:
 
 
 def _uuid(value: str) -> UUID | None:
+    if value == "public":
+        return _PUBLIC_TENANT_UUID
     try:
         return UUID(value)
     except (TypeError, ValueError):
         return None
 
 
-def _citation(chunk: ChunkMetadata, policy_epoch: int) -> Citation:
+def _citation(chunk: ChunkMetadata, policy_epoch: int, *, tenant_id: str | None = None) -> Citation:
     return Citation(
         chunk_id=str(chunk.chunk_id),
         document_id=str(chunk.document_id),
         version_id=str(chunk.version_id),
-        tenant_id=str(chunk.tenant_id),
+        tenant_id=tenant_id or str(chunk.tenant_id),
         policy_epoch=policy_epoch,
         locator=chunk.source_locator,
         parent_chunk_id=(str(chunk.parent_chunk_id) if chunk.parent_chunk_id is not None else None),

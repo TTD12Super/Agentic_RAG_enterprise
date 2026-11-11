@@ -21,7 +21,7 @@ from ..core.chat import (
 from ..feedback import FeedbackService
 from ..identity.errors import IdentityError
 from ..identity.models import AuthenticatedPrincipal
-from . import identity as identity_api
+from ..rag.runtime import LocalRagExecutor
 
 
 class MessageRequest(BaseModel):
@@ -38,8 +38,12 @@ class FeedbackRequest(BaseModel):
 
 
 router = APIRouter(tags=["chat"])
-chat_service = ChatService()
+# Development default: this connects the HTTP chat boundary to the real local
+# ingestion/retrieval/citation pipeline. Production replaces it with a worker
+# executor backed by approved providers and durable repositories.
+chat_service = ChatService(executor=LocalRagExecutor())
 feedback_service = FeedbackService()
+from . import identity as identity_api  # noqa: E402
 
 
 def _maintenance_probe(tenant_id: str) -> str | None:
