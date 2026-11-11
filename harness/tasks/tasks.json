@@ -766,7 +766,7 @@
       "phase": 4,
       "title": "Implement scoped memory and caching",
       "owner": "backend",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "ORCH-001",
         "AUTH-001"

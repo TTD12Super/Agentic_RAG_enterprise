@@ -266,9 +266,9 @@
     "ast_empty": true
   },
   "harness/tasks/tasks.json": {
-    "mtime": 1794360794.035339,
-    "seen": 1794360804.181725,
-    "ast_hash": "b7aaa00af230e28211c3282a36431962",
+    "mtime": 1794362295.5246716,
+    "seen": 1794362320.920235,
+    "ast_hash": "d7aa26568bcf82155481f50d4c7d6630",
     "semantic_hash": ""
   },
   "infra/docker/development.compose.yml": {
@@ -2712,6 +2712,78 @@
     "mtime": 1794360843.8390472,
     "seen": 1794360852.417156,
     "ast_hash": "ed640eff26b405c410e40894f49e8d08",
+    "semantic_hash": ""
+  },
+  "backend/app/cache/__init__.py": {
+    "mtime": 1794361476.2542913,
+    "seen": 1794361606.1234298,
+    "ast_hash": "5e20fdd4f51d49904c8b99113d70e440",
+    "semantic_hash": ""
+  },
+  "backend/app/cache/scoped.py": {
+    "mtime": 1794361685.6399546,
+    "seen": 1794362320.920176,
+    "ast_hash": "6e8a02a526b8b5c980c4f8e2e4dbd69d",
+    "semantic_hash": ""
+  },
+  "backend/app/memory/__init__.py": {
+    "mtime": 1794361476.2553189,
+    "seen": 1794361606.123452,
+    "ast_hash": "df9799977f863d9d316cdbfef9aca904",
+    "semantic_hash": ""
+  },
+  "backend/app/memory/store.py": {
+    "mtime": 1794361490.9697192,
+    "seen": 1794361606.123453,
+    "ast_hash": "bbe428bc3142b31420de952d148a60c4",
+    "semantic_hash": ""
+  },
+  "backend/tests/test_cache_memory.py": {
+    "mtime": 1794361692.0566778,
+    "seen": 1794362320.920214,
+    "ast_hash": "82aff204ab2bea6b3a34b20890ad44c7",
+    "semantic_hash": ""
+  },
+  "tests/qa/cache_memory/test_behavior_component.py": {
+    "mtime": 1794361861.2389722,
+    "seen": 1794362320.9202719,
+    "ast_hash": "03a2b8235d2624adf1c463e195619c06",
+    "semantic_hash": ""
+  },
+  "tests/qa/cache_memory/test_contract_integration.py": {
+    "mtime": 1794362210.351164,
+    "seen": 1794362320.9202728,
+    "ast_hash": "10b24518086062d4407fd6d642af1bcd",
+    "semantic_hash": ""
+  },
+  "tests/qa/cache_memory/test_e2e_operational.py": {
+    "mtime": 1794362210.3523037,
+    "seen": 1794362320.9202728,
+    "ast_hash": "cc66954640ccc7d5b3acb929ab9f7b3f",
+    "semantic_hash": ""
+  },
+  "tests/qa/cache_memory/test_security_adversarial.py": {
+    "mtime": 1794361980.575107,
+    "seen": 1794362320.920274,
+    "ast_hash": "7b47bfa10b98e051b677c053476104e5",
+    "semantic_hash": ""
+  },
+  "harness/handoffs/CACHE-001-QA-001.md": {
+    "mtime": 1794362245.3616266,
+    "seen": 1794362320.9204102,
+    "ast_hash": "6cc0e94ee0a2d379d812c07a2848caab",
+    "semantic_hash": ""
+  },
+  "harness/handoffs/CACHE-001.md": {
+    "mtime": 1794362295.5228229,
+    "seen": 1794362320.9204109,
+    "ast_hash": "48441702a710c277299b20a6ba31b986",
+    "semantic_hash": ""
+  },
+  "harness/reviews/CACHE-001-main-review.md": {
+    "mtime": 1794362338.5872464,
+    "seen": 1794362352.42624,
+    "ast_hash": "f42d1306aa3f1ca045063b7d160f837a",
     "semantic_hash": ""
   },
   "frontend/package-lock.json": {
