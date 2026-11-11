@@ -812,7 +812,7 @@
       "phase": 4,
       "title": "Implement role-limited management dashboard and feedback review APIs",
       "owner": "backend",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": ["CHAT-001", "ADMIN-API-001", "EVAL-001", "INFRA-003"],
       "deliverables": ["Authorized dashboard aggregates for users, documents, usage, ingestion, latency, costs and measured evaluation", "Authorized feedback review API with privacy-safe output"],
       "acceptance": "Management APIs expose only authorized, available aggregates and feedback; usage/cost estimates and quality metrics show their measurement period, provenance and unavailable state; ordinary users cannot access management data.",

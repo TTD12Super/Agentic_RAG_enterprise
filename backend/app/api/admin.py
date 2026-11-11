@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Annotated, Literal
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
-from fastapi import APIRouter, Header, Request, Response
+from fastapi import APIRouter, Header, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from ..authorization import (
@@ -429,6 +429,230 @@ def _grant_payload(grant: AccessGrant) -> dict[str, object]:
         "role": grant.role,
         "group": grant.group,
         "department_id": grant.department_id,
+    }
+
+
+def _dashboard_metric(
+    value: object,
+    *,
+    unit: str,
+    provenance: str,
+    measurement_period: dict[str, str],
+    available: bool = True,
+    is_estimate: bool = False,
+    reason: str | None = None,
+) -> dict[str, object]:
+    metric = {
+        "value": value,
+        "unit": unit,
+        "status": "MEASURED" if available else "UNAVAILABLE",
+        "available": available,
+        "is_estimate": is_estimate,
+        "provenance": provenance,
+        "measurement_period": measurement_period,
+    }
+    if reason is not None:
+        metric["reason"] = reason
+    return metric
+
+
+def _unavailable_metric(
+    *,
+    unit: str,
+    provenance: str,
+    measurement_period: dict[str, str],
+    reason: str,
+) -> dict[str, object]:
+    return _dashboard_metric(
+        None,
+        unit=unit,
+        provenance=provenance,
+        measurement_period=measurement_period,
+        available=False,
+        reason=reason,
+    )
+
+
+def _counts(values: list[str]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for value in values:
+        counts[value] = counts.get(value, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def _dashboard_metrics(principal: AuthenticatedPrincipal) -> dict[str, object]:
+    now = datetime.now(timezone.utc)
+    measurement_period = {
+        "label": "request_snapshot",
+        "start": _utc_z(now),
+        "end": _utc_z(now),
+    }
+
+    users = identity_store.find_all(principal.tenant_id)
+    metrics: dict[str, object] = {
+        "users": _dashboard_metric(
+            {
+                "total": len(users),
+                "active": sum(record.active for record in users),
+                "by_role": _counts([role for record in users for role in record.roles]),
+            },
+            unit="users",
+            provenance="identity_store",
+            measurement_period=measurement_period,
+        )
+    }
+
+    tenant_uuid = _tenant_uuid(principal.tenant_id)
+    documents = []
+    ingestion_jobs = []
+    for tenant_id, document_id in admin_state.document_versions:
+        if tenant_id != principal.tenant_id:
+            continue
+        try:
+            document = admin_state.ingestion.get_document(UUID(document_id), tenant_uuid)
+        except IngestionError:
+            continue
+        documents.append(document)
+        for version_id in admin_state.document_versions[(tenant_id, document_id)]:
+            try:
+                version = admin_state.ingestion.get_version(version_id, tenant_uuid)
+                ingestion_jobs.append(admin_state.ingestion.get_job(version.job_id, tenant_uuid))
+            except IngestionError:
+                continue
+    metrics["documents"] = _dashboard_metric(
+        {
+            "total": len(documents),
+            "by_status": _counts([str(document.status) for document in documents]),
+            "current_versions": sum(document.current_version_id is not None for document in documents),
+        },
+        unit="documents",
+        provenance="admin_state + ingestion.lifecycle",
+        measurement_period=measurement_period,
+    )
+
+    try:
+        from ..core.chat import JobState
+        from . import chat as chat_api
+
+        chat_jobs = chat_api.chat_service.repository.jobs_for_tenant(
+            principal.tenant_id,
+            states=set(JobState),
+        )
+        metrics["usage"] = _dashboard_metric(
+            {
+                "requests": len(chat_jobs),
+                "by_state": _counts([str(job.state) for job in chat_jobs]),
+            },
+            unit="requests",
+            provenance="chat.repository",
+            measurement_period=measurement_period,
+        )
+        metrics["cache_hit_rate"] = _unavailable_metric(
+            unit="ratio",
+            provenance="cache.telemetry",
+            measurement_period=measurement_period,
+            reason="CACHE_TELEMETRY_UNAVAILABLE",
+        )
+    except Exception:
+        metrics["usage"] = _unavailable_metric(
+            unit="requests",
+            provenance="chat.repository",
+            measurement_period=measurement_period,
+            reason="USAGE_PROVIDER_UNAVAILABLE",
+        )
+        metrics["cache_hit_rate"] = _unavailable_metric(
+            unit="ratio",
+            provenance="cache.telemetry",
+            measurement_period=measurement_period,
+            reason="CACHE_TELEMETRY_UNAVAILABLE",
+        )
+
+    metrics["ingestion"] = _dashboard_metric(
+        {
+            "jobs": len(ingestion_jobs),
+            "by_state": _counts([str(job.state) for job in ingestion_jobs]),
+            "failed": sum(str(job.state) == "FAILED" for job in ingestion_jobs),
+        },
+        unit="jobs",
+        provenance="admin_state + ingestion.lifecycle",
+        measurement_period=measurement_period,
+    )
+
+    metrics["latency"] = _unavailable_metric(
+        unit="milliseconds",
+        provenance="observability.telemetry",
+        measurement_period=measurement_period,
+        reason="LATENCY_TELEMETRY_UNAVAILABLE",
+    )
+    metrics["cost"] = _unavailable_metric(
+        unit="USD",
+        provenance="provider.telemetry",
+        measurement_period=measurement_period,
+        reason="PROVIDER_COST_UNAVAILABLE",
+    )
+    metrics["evaluation"] = _unavailable_metric(
+        unit="score",
+        provenance="evaluation.provider",
+        measurement_period=measurement_period,
+        reason="EVALUATION_UNAVAILABLE",
+    )
+    return metrics
+
+
+@router.get("/dashboard")
+async def get_dashboard(
+    request: Request,
+    response: Response,
+    authorization: Annotated[str | None, Header()] = None,
+) -> dict[str, object]:
+    context, principal = _resolve(request, response, authorization, action="admin:dashboard:read")
+    _require_manager(context, principal, action="admin:dashboard:read")
+    _record_success(context, principal, action="admin:dashboard:read", code="DASHBOARD_READ")
+    return {"schema_version": "1.0", **_dashboard_metrics(principal)}
+
+
+@router.get("/feedback/review")
+@router.get("/feedback")
+async def review_feedback(
+    request: Request,
+    response: Response,
+    authorization: Annotated[str | None, Header()] = None,
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0, le=10_000),
+    rating: str | None = Query(default=None, min_length=1, max_length=8),
+) -> dict[str, object]:
+    context, principal = _resolve(request, response, authorization, action="admin:feedback:review")
+    _require_manager(context, principal, action="admin:feedback:review")
+    normalized_rating = rating.strip().upper() if rating is not None else None
+    if normalized_rating is not None and normalized_rating not in {"POSITIVE", "NEGATIVE"}:
+        raise _problem("REQUEST_INVALID", "The request is invalid.")
+    from . import chat as chat_api
+
+    records, total = chat_api.feedback_service.review(
+        tenant_id=principal.tenant_id,
+        limit=limit,
+        offset=offset,
+        rating=normalized_rating,
+    )
+    _record_success(context, principal, action="admin:feedback:review", code="FEEDBACK_REVIEWED")
+    return {
+        "schema_version": "1.0",
+        "items": [
+            {
+                "feedback_id": record.feedback_id,
+                "answer_id": record.answer_id,
+                "rating": record.rating,
+                "created_at": _utc_z(record.created_at),
+            }
+            for record in records
+        ],
+        "pagination": {
+            "limit": limit,
+            "offset": offset,
+            "total": total,
+            "has_more": offset + len(records) < total,
+        },
+        "filter": {"rating": normalized_rating},
     }
 
 

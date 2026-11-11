@@ -307,6 +307,7 @@ async def submit_feedback(
         rating=body.rating,
         comment=body.comment,
         idempotency_key=idempotency_key,
+        tenant_id=actor.tenant_id,
     )
     identity_api._record(
         context,

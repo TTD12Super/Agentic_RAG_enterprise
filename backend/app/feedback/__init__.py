@@ -1,3 +1,3 @@
-from .service import FeedbackRecord, FeedbackRepository, FeedbackService, InMemoryFeedbackRepository
+from .service import FeedbackRecord, FeedbackRepository, FeedbackReview, FeedbackService, InMemoryFeedbackRepository
 
-__all__ = ["FeedbackRecord", "FeedbackRepository", "FeedbackService", "InMemoryFeedbackRepository"]
+__all__ = ["FeedbackRecord", "FeedbackRepository", "FeedbackReview", "FeedbackService", "InMemoryFeedbackRepository"]
