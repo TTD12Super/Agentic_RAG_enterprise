@@ -6,7 +6,7 @@ The Frontend provides user interfaces for authentication, enterprise knowledge c
 
 Backend services remain responsible for authentication and authorization enforcement.
 
-**Status:** Frontend bootstrap baseline; product screens are deferred to `UI-001`.
+**Status:** `UI-001` shell implemented; chat API-client wiring is integrated with the local backend/RAG path.
 
 ## 2. Technology Stack
 
@@ -69,13 +69,13 @@ npm test
 npm run build
 ```
 
-Copy `.env.example` to `.env.local` when a local API URL is needed. `VITE_*` values are browser-visible configuration, never API keys or other secrets. The shell does not call the backend yet.
+Copy `.env.example` to `.env.local` when a local API URL is needed. `VITE_*` values are browser-visible configuration, never API keys or other secrets. Vite proxies `/api` to `http://127.0.0.1:8000` during local development; set `VITE_DEV_BACKEND_URL` to override it.
 
 ### Contract boundary
 
-The shell follows the approved v1 contract and `docs/design/IMPLEMENTATION-BOUNDARY.md`: canonical role identifiers, backend-authoritative authorization, durable-job polling, and no MVP token streaming. Figma remains the visual source of truth; this task adds no product feature or API integration.
+The shell follows the approved v1 contract and `docs/design/IMPLEMENTATION-BOUNDARY.md`: canonical role identifiers, backend-authoritative authorization, durable-job polling, and no MVP token streaming. The chat composer now calls the local `/api/v1` conversation and query-job endpoints; Figma remains the visual source of truth.
 
-The later frontend implementation goal must provide the required four test families with at least 10 materially different cases per family (40 cases total): behavior/component, contract/integration, security/adversarial, and E2E/operational. This bootstrap only proves the shell renders; it does not claim those later feature gates.
+The UI-001 gate provides the four required QA families with at least 10 materially different cases per family (40 cases total) in `tests/qa/frontend_boot`, plus 10 Vitest interaction tests and manual browser visual QA. Admin screens still use fixtures until their API clients are connected.
 
 ## 6. References
 
