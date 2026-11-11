@@ -611,6 +611,128 @@ async def get_dashboard(
     return {"schema_version": "1.0", **_dashboard_metrics(principal)}
 
 
+@router.get("/documents")
+async def list_documents(
+    request: Request,
+    response: Response,
+    authorization: Annotated[str | None, Header()] = None,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0, le=10_000),
+) -> dict[str, object]:
+    """Return a policy-filtered document catalog for the real UI boundary."""
+
+    context, principal = _resolve(request, response, authorization, action="admin:document:list")
+    management = bool({Role.SYSTEM_ADMIN.value, Role.WEBSITE_MANAGER.value} & set(principal.roles))
+    tenant_uuid = _tenant_uuid(principal.tenant_id)
+    documents: list[dict[str, object]] = []
+    seen: set[str] = set()
+    for tenant_id, document_id in sorted(admin_state.document_versions):
+        if tenant_id != principal.tenant_id or document_id in seen:
+            continue
+        seen.add(document_id)
+        try:
+            document = admin_state.ingestion.get_document(UUID(document_id), tenant_uuid)
+        except IngestionError:
+            continue
+        if not management:
+            if document.status != "ACTIVE" or document.current_version_id is None:
+                continue
+            try:
+                _enforce_document(context, principal, Action.DOCUMENT_READ, UUID(document_id))
+            except IdentityError as error:
+                if error.code == "AUTH_UNAVAILABLE":
+                    raise
+                continue
+        documents.append(_document_payload(document))
+    page = documents[offset : offset + limit]
+    _record_success(context, principal, action="admin:document:list", code="DOCUMENTS_LISTED")
+    return {
+        "schema_version": "1.0",
+        "items": page,
+        "pagination": {
+            "limit": limit,
+            "offset": offset,
+            "total": len(documents),
+            "has_more": offset + len(page) < len(documents),
+        },
+    }
+
+
+@router.get("/approvals")
+@router.get("/documents/approval-queue")
+async def list_approval_queue(
+    request: Request,
+    response: Response,
+    authorization: Annotated[str | None, Header()] = None,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0, le=10_000),
+) -> dict[str, object]:
+    """Expose review work without exposing source content."""
+
+    context, principal = _resolve(request, response, authorization, action="admin:approval:list")
+    _require_manager(context, principal, action="admin:approval:list")
+    tenant_uuid = _tenant_uuid(principal.tenant_id)
+    items: list[dict[str, object]] = []
+    for tenant_id, document_id in sorted(admin_state.document_versions):
+        if tenant_id != principal.tenant_id:
+            continue
+        for version_id in admin_state.document_versions[(tenant_id, document_id)]:
+            try:
+                version = admin_state.ingestion.get_version(version_id, tenant_uuid)
+            except IngestionError:
+                continue
+            if version.metadata.status not in {"QUARANTINED", "PENDING_REVIEW_2"}:
+                continue
+            items.append(_version_payload(version))
+    page = items[offset : offset + limit]
+    _record_success(context, principal, action="admin:approval:list", code="APPROVALS_LISTED")
+    return {
+        "schema_version": "1.0",
+        "items": page,
+        "pagination": {
+            "limit": limit,
+            "offset": offset,
+            "total": len(items),
+            "has_more": offset + len(page) < len(items),
+        },
+    }
+
+
+@router.get("/audit")
+async def list_audit_events(
+    request: Request,
+    response: Response,
+    authorization: Annotated[str | None, Header()] = None,
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0, le=10_000),
+) -> dict[str, object]:
+    """Return metadata-only audit events; conversation bodies never enter this path."""
+
+    context, principal = _resolve(request, response, authorization, action="admin:audit:read")
+    _require_manager(context, principal, action="admin:audit:read")
+    sink = identity_api.audit_sink
+    list_events = getattr(sink, "list_events", None)
+    if callable(list_events):
+        items = list(list_events(tenant_id=principal.tenant_id, limit=limit, offset=offset))
+        count_events = getattr(sink, "count_events", None)
+        total = int(count_events(tenant_id=principal.tenant_id)) if callable(count_events) else offset + len(items) + (1 if len(items) == limit else 0)
+    else:
+        events = [event.as_dict() for event in getattr(sink, "events", ()) if event.tenant_id == principal.tenant_id]
+        total = len(events)
+        items = events[offset : offset + limit]
+    _record_success(context, principal, action="admin:audit:read", code="AUDIT_READ")
+    return {
+        "schema_version": "1.0",
+        "items": items,
+        "pagination": {
+            "limit": limit,
+            "offset": offset,
+            "total": total,
+            "has_more": offset + len(items) < total,
+        },
+    }
+
+
 @router.get("/feedback/review")
 @router.get("/feedback")
 async def review_feedback(

@@ -99,6 +99,19 @@ def test_anonymous_submit_status_completion_and_history_are_session_scoped():
     assert other_conversation != conversation_id
 
 
+def test_cross_origin_anonymous_cookie_is_usable_by_vercel_fetch() -> None:
+    response = request(
+        "POST",
+        "/api/v1/conversations",
+        headers={"Origin": "https://agentic-rag-enterprise.vercel.app"},
+    )
+
+    assert response.status_code == 201
+    set_cookie = response.headers["set-cookie"]
+    assert "SameSite=none" in set_cookie
+    assert "Secure" in set_cookie
+
+
 def test_submission_replay_is_idempotent_and_changed_replay_is_denied():
     conversation_id, token = anonymous_conversation()
     headers = {"X-Anonymous-Session": token, "Idempotency-Key": "anonymous-replay-001"}

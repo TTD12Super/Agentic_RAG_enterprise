@@ -22,6 +22,8 @@ from ..feedback import FeedbackService
 from ..identity.errors import IdentityError
 from ..identity.models import AuthenticatedPrincipal
 from ..rag.runtime import LocalRagExecutor
+from ..core.config import get_settings
+from ..db.runtime import PostgresChatRepository
 
 
 class MessageRequest(BaseModel):
@@ -41,7 +43,11 @@ router = APIRouter(tags=["chat"])
 # Development default: this connects the HTTP chat boundary to the real local
 # ingestion/retrieval/citation pipeline. Production replaces it with a worker
 # executor backed by approved providers and durable repositories.
-chat_service = ChatService(executor=LocalRagExecutor())
+_database_url = get_settings().database_url
+chat_service = ChatService(
+    repository=PostgresChatRepository(_database_url) if _database_url else None,
+    executor=LocalRagExecutor(),
+)
 feedback_service = FeedbackService()
 from . import identity as identity_api  # noqa: E402
 
@@ -91,6 +97,7 @@ chat_service.document_state_provider = _document_state
 def reset_state() -> None:
     global chat_service, feedback_service
     chat_service = ChatService(
+        repository=PostgresChatRepository(_database_url) if _database_url else None,
         policy_store=chat_service.policy_store,
         maintenance_probe=_maintenance_probe,
         document_state_provider=_document_state,
@@ -150,12 +157,14 @@ async def create_conversation(
     )
     conversation = chat_service.create_conversation(actor)
     if created_session and actor.session_token:
+        cross_origin_https = request.headers.get("origin", "").startswith("https://")
         response.set_cookie(
             ANONYMOUS_SESSION_COOKIE,
             actor.session_token,
             max_age=24 * 60 * 60,
             httponly=True,
-            samesite="lax",
+            samesite="none" if cross_origin_https else "lax",
+            secure=cross_origin_https,
         )
     _safe_audit(context, action="chat:conversation:create", principal=principal, code="CONVERSATION_CREATED")
     return {

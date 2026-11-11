@@ -11,6 +11,8 @@ from ..identity.errors import AUTH_REQUIRED, IdentityError
 from ..identity.models import AuthenticatedPrincipal
 from ..identity.service import AuthenticationService
 from ..identity.store import InMemoryIdentityStore
+from ..core.config import get_settings
+from ..db.runtime import PostgresAuditSink
 from ..observability import (
     AuditSink,
     CorrelationContext,
@@ -35,7 +37,8 @@ class SignInResponse(BaseModel):
 
 identity_store = InMemoryIdentityStore()
 identity_service = AuthenticationService(identity_store)
-audit_sink: AuditSink = InMemoryAuditSink()
+_database_url = get_settings().database_url
+audit_sink: AuditSink = PostgresAuditSink(_database_url) if _database_url else InMemoryAuditSink()
 router = APIRouter(tags=["identity", "administration"])
 
 

@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     environment: str = "development"
     log_level: str = "INFO"
     api_prefix: str = "/api/v1"
+    database_url: str | None = None
     cors_origins: str = (
         "https://agentic-rag-enterprise.vercel.app,"
         "http://localhost:5173,http://127.0.0.1:5173"
