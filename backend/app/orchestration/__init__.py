@@ -7,6 +7,18 @@ from .context import (
     build_secure_context,
     estimate_tokens,
 )
+from .orchestrator import (
+    AnswerDraft,
+    AnswerSynthesizer,
+    BoundedOrchestrator,
+    MAX_RETRIEVAL_ROUNDS,
+    MAX_SUBQUERIES,
+    MAX_TOOL_CALLS,
+    OrchestrationOutcome,
+    OrchestrationRequest,
+    OrchestrationStatus,
+    QueryRoute,
+)
 
 __all__ = [
     "AssembledContext",
@@ -16,4 +28,14 @@ __all__ = [
     "SecureContextBuilder",
     "build_secure_context",
     "estimate_tokens",
+    "AnswerDraft",
+    "AnswerSynthesizer",
+    "BoundedOrchestrator",
+    "MAX_RETRIEVAL_ROUNDS",
+    "MAX_SUBQUERIES",
+    "MAX_TOOL_CALLS",
+    "OrchestrationOutcome",
+    "OrchestrationRequest",
+    "OrchestrationStatus",
+    "QueryRoute",
 ]

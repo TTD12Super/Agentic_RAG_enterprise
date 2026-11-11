@@ -707,7 +707,7 @@
       "phase": 4,
       "title": "Implement bounded LangGraph orchestrator and Tool Gateway",
       "owner": "orchestration",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "EVAL-001",
         "EVID-001",

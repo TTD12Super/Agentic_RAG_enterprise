@@ -157,10 +157,10 @@
     "semantic_hash": "0c79d77282135d16dbd26d22e2b598e3"
   },
   "backend/pyproject.toml": {
-    "mtime": 1794285093.1679893,
-    "seen": 1794299689.615565,
-    "ast_hash": "97be9acfd6b8998734db296300ecc57e",
-    "semantic_hash": "97be9acfd6b8998734db296300ecc57e"
+    "mtime": 1794360301.926187,
+    "seen": 1794360804.181696,
+    "ast_hash": "7510fa9ea2c558f359f000e949ce718f",
+    "semantic_hash": ""
   },
   "backend/tests/__init__.py": {
     "mtime": 1794283486.3351946,
@@ -266,9 +266,9 @@
     "ast_empty": true
   },
   "harness/tasks/tasks.json": {
-    "mtime": 1794332024.9205759,
-    "seen": 1794332036.1012092,
-    "ast_hash": "c58ea66db7955f2871b960d88526252b",
+    "mtime": 1794360794.035339,
+    "seen": 1794360804.181725,
+    "ast_hash": "b7aaa00af230e28211c3282a36431962",
     "semantic_hash": ""
   },
   "infra/docker/development.compose.yml": {
@@ -2283,9 +2283,9 @@
     "semantic_hash": ""
   },
   "backend/app/orchestration/__init__.py": {
-    "mtime": 1794306806.2445455,
-    "seen": 1794307294.076608,
-    "ast_hash": "f0df79b0ae86667f4718dfc4f4e52e93",
+    "mtime": 1794359805.4377983,
+    "seen": 1794360804.181687,
+    "ast_hash": "45fedf2ecf24cdbeea38449b93bfadea",
     "semantic_hash": ""
   },
   "backend/app/orchestration/context.py": {
@@ -2595,9 +2595,9 @@
     "semantic_hash": ""
   },
   "harness/handoffs/CITATION-SCHEMA-001.md": {
-    "mtime": 1794333491.4514027,
-    "seen": 1794333509.11401,
-    "ast_hash": "117fab7bd3962e28f92f0eb636981cc6",
+    "mtime": 1794333558.3682168,
+    "seen": 1794360804.181899,
+    "ast_hash": "ac87383756fbbc2e68e0233ca9fdd7b8",
     "semantic_hash": ""
   },
   "tests/qa/rag_v4_citation/test_behavior_component.py": {
@@ -2637,9 +2637,81 @@
     "semantic_hash": ""
   },
   "harness/reviews/RAG-V4-001-main-review.md": {
-    "mtime": 1794333491.4518063,
-    "seen": 1794333509.114099,
-    "ast_hash": "9662520b57bbeda5e15adc1d724ae047",
+    "mtime": 1794333558.367691,
+    "seen": 1794360804.181942,
+    "ast_hash": "1b2b3451e369e50bf77446dc0b68b70f",
+    "semantic_hash": ""
+  },
+  "backend/app/orchestration/orchestrator.py": {
+    "mtime": 1794360317.4597476,
+    "seen": 1794360804.181689,
+    "ast_hash": "8541e8c0f95e419125f333a3fe7b9435",
+    "semantic_hash": ""
+  },
+  "backend/app/tools/__init__.py": {
+    "mtime": 1794351699.4091585,
+    "seen": 1794360804.181695,
+    "ast_hash": "a49dfd472bc1101756513588c3848935",
+    "semantic_hash": ""
+  },
+  "backend/app/tools/gateway.py": {
+    "mtime": 1794359963.0071485,
+    "seen": 1794360804.181696,
+    "ast_hash": "fa54ea4bd434779e459007717ad1a4b7",
+    "semantic_hash": ""
+  },
+  "backend/tests/test_orchestration_runtime.py": {
+    "mtime": 1794360348.4790878,
+    "seen": 1794360804.1817138,
+    "ast_hash": "44c87270d565f8a9c23c67208169b6b4",
+    "semantic_hash": ""
+  },
+  "backend/tests/test_tool_gateway.py": {
+    "mtime": 1794360336.0574415,
+    "seen": 1794360804.181716,
+    "ast_hash": "a5cb601c555dec1e7aca1cf3a9c54c5a",
+    "semantic_hash": ""
+  },
+  "tests/qa/orchestration_langgraph/test_behavior_component.py": {
+    "mtime": 1794360607.134745,
+    "seen": 1794360804.181806,
+    "ast_hash": "c92377f6e79a70be7b4747c1bee0d1c1",
+    "semantic_hash": ""
+  },
+  "tests/qa/orchestration_langgraph/test_contract_integration.py": {
+    "mtime": 1794360607.1355505,
+    "seen": 1794360804.181807,
+    "ast_hash": "b8fe6b54f84104fee8ab9ce63e095539",
+    "semantic_hash": ""
+  },
+  "tests/qa/orchestration_langgraph/test_e2e_operational.py": {
+    "mtime": 1794360582.1913292,
+    "seen": 1794360804.181807,
+    "ast_hash": "a4308d276b28781f3a9fb7abe71313da",
+    "semantic_hash": ""
+  },
+  "tests/qa/orchestration_langgraph/test_security_adversarial.py": {
+    "mtime": 1794360537.0658355,
+    "seen": 1794360804.1818082,
+    "ast_hash": "f9d2962af95167c6e4dc49a4971bfdc4",
+    "semantic_hash": ""
+  },
+  "harness/handoffs/ORCH-001-QA-001.md": {
+    "mtime": 1794360631.7757244,
+    "seen": 1794360804.18192,
+    "ast_hash": "ee4f2aa67d8503b285606f083f2963b4",
+    "semantic_hash": ""
+  },
+  "harness/handoffs/ORCH-001.md": {
+    "mtime": 1794360843.838657,
+    "seen": 1794360852.417135,
+    "ast_hash": "5f455cd498b4fbb34ea4895fb40cace3",
+    "semantic_hash": ""
+  },
+  "harness/reviews/ORCH-001-main-review.md": {
+    "mtime": 1794360843.8390472,
+    "seen": 1794360852.417156,
+    "ast_hash": "ed640eff26b405c410e40894f49e8d08",
     "semantic_hash": ""
   },
   "frontend/package-lock.json": {
