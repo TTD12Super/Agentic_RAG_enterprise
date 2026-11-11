@@ -792,7 +792,7 @@
       "phase": 4,
       "title": "Implement chat API, durable jobs and conversation history",
       "owner": "backend",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": ["ORCH-001", "CACHE-001", "IDENT-001", "DB-001"],
       "deliverables": ["Versioned chat and own-conversation APIs with anonymous session isolation", "Authorized citation preview/download endpoints and feedback API, subject to approved feedback policy", "Durable query-job admission, status, queue, maintenance and resume integration", "Real Core-to-worker, authorization and conversation privacy tests"],
       "acceptance": "Authenticated and anonymous users can submit and retrieve their own authorized conversation/job; approved feedback and citation preview/download endpoints enforce current policy; real ingestion maintenance safely pauses and resumes durable jobs; privacy, replay and denial tests pass; Tech Lead review.",

@@ -199,5 +199,7 @@ async def sign_out(
 # The application shell includes this router directly. Keeping the admin
 # routes on the same router preserves the existing main.py write boundary.
 from .admin import router as administration_router  # noqa: E402
+from .chat import router as chat_router  # noqa: E402
 
 router.include_router(administration_router)
+router.include_router(chat_router)

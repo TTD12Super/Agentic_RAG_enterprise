@@ -31,9 +31,9 @@
     "semantic_hash": "a15b925f8a2f3075dd2f9f507f8a2f78"
   },
   "backend/app/api/identity.py": {
-    "mtime": 1794303420.4246373,
-    "seen": 1794304096.07122,
-    "ast_hash": "258b124c8f10298dab40b819ca212d84",
+    "mtime": 1794363093.387171,
+    "seen": 1794363130.3240461,
+    "ast_hash": "9997d5472e613d3e44aaa946a33a078d",
     "semantic_hash": ""
   },
   "backend/app/authorization/__init__.py": {
@@ -266,9 +266,9 @@
     "ast_empty": true
   },
   "harness/tasks/tasks.json": {
-    "mtime": 1794362295.5246716,
-    "seen": 1794362320.920235,
-    "ast_hash": "d7aa26568bcf82155481f50d4c7d6630",
+    "mtime": 1794363925.8194022,
+    "seen": 1794363932.638894,
+    "ast_hash": "f3b7ce89de4ef21c99ff30bfd3b6fb0d",
     "semantic_hash": ""
   },
   "infra/docker/development.compose.yml": {
@@ -2784,6 +2784,84 @@
     "mtime": 1794362338.5872464,
     "seen": 1794362352.42624,
     "ast_hash": "f42d1306aa3f1ca045063b7d160f837a",
+    "semantic_hash": ""
+  },
+  "backend/app/api/chat.py": {
+    "mtime": 1794363093.387877,
+    "seen": 1794363130.324045,
+    "ast_hash": "5e1a2c402a6c4609aaba5e368f54ef86",
+    "semantic_hash": ""
+  },
+  "backend/app/core/chat.py": {
+    "mtime": 1794363235.1011274,
+    "seen": 1794363247.1491368,
+    "ast_hash": "bd0d255cbd6dcd31713e3a6188eb75d3",
+    "semantic_hash": ""
+  },
+  "backend/app/feedback/__init__.py": {
+    "mtime": 1794362922.2080324,
+    "seen": 1794363130.32406,
+    "ast_hash": "ef3d1a35acd714cd15349dca3307e7e8",
+    "semantic_hash": ""
+  },
+  "backend/app/feedback/service.py": {
+    "mtime": 1794363173.4555132,
+    "seen": 1794363195.650929,
+    "ast_hash": "1c4aa58e66e5330fd66c7b390eaebe63",
+    "semantic_hash": ""
+  },
+  "backend/tests/test_chat_api.py": {
+    "mtime": 1794363173.4563296,
+    "seen": 1794363195.6509619,
+    "ast_hash": "c8a81a6a9500cd73d58ee8659885491d",
+    "semantic_hash": ""
+  },
+  "tests/integration/test_chat_api.py": {
+    "mtime": 1794363077.2923493,
+    "seen": 1794363130.324141,
+    "ast_hash": "9404c7246cb149da756932c7032e55fd",
+    "semantic_hash": ""
+  },
+  "harness/handoffs/CHAT-001.md": {
+    "mtime": 1794363925.817787,
+    "seen": 1794363932.639097,
+    "ast_hash": "9e8aec390fd564759711bc09443490a3",
+    "semantic_hash": ""
+  },
+  "tests/qa/chat_api/test_behavior_component.py": {
+    "mtime": 1794363817.7670357,
+    "seen": 1794363932.6389399,
+    "ast_hash": "afbfbe351f5ef6ea111632dcd5cd2c7b",
+    "semantic_hash": ""
+  },
+  "tests/qa/chat_api/test_contract_integration.py": {
+    "mtime": 1794363804.609118,
+    "seen": 1794363932.6389408,
+    "ast_hash": "b771fe1e64d1d0b403b8c29b88d06fd9",
+    "semantic_hash": ""
+  },
+  "tests/qa/chat_api/test_e2e_operational.py": {
+    "mtime": 1794363804.6093748,
+    "seen": 1794363932.638942,
+    "ast_hash": "bb85e5f80ca54c8d739502de74e7aa13",
+    "semantic_hash": ""
+  },
+  "tests/qa/chat_api/test_security_adversarial.py": {
+    "mtime": 1794363621.0511436,
+    "seen": 1794363932.638942,
+    "ast_hash": "c750bf14e8393dd65fa43596c1686310",
+    "semantic_hash": ""
+  },
+  "harness/handoffs/CHAT-001-QA-001.md": {
+    "mtime": 1794363860.8515248,
+    "seen": 1794363932.639096,
+    "ast_hash": "45c4a682c4893ba84770c1d7ee115f1a",
+    "semantic_hash": ""
+  },
+  "harness/reviews/CHAT-001-main-review.md": {
+    "mtime": 1794363952.2640014,
+    "seen": 1794363968.6381068,
+    "ast_hash": "f03b4e48298fe702688d4fcd682d56fe",
     "semantic_hash": ""
   },
   "frontend/package-lock.json": {
