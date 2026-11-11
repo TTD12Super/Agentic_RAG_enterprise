@@ -6,6 +6,7 @@ routes; data, provider and feature workflows remain downstream work.
 """
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .api.identity import router as identity_router
@@ -15,6 +16,21 @@ from .observability import CorrelationContext
 
 settings = get_settings()
 app = FastAPI(title=settings.app_name, version="0.1.0")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "Idempotency-Key",
+        "Traceparent",
+        "X-Anonymous-Session",
+        "X-Request-ID",
+    ],
+    expose_headers=["Retry-After", "Traceparent", "X-Request-ID"],
+)
 app.include_router(identity_router, prefix=settings.api_prefix)
 
 

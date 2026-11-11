@@ -25,6 +25,30 @@ def test_healthz_is_local_liveness_only() -> None:
     assert response.json() == {"status": "ok"}
 
 
+def test_vercel_origin_can_use_cookie_authenticated_api() -> None:
+    async def request_preflight() -> httpx.Response:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport,
+            base_url="http://testserver",
+        ) as client:
+            return await client.options(
+                "/api/v1/conversations",
+                headers={
+                    "Origin": "https://agentic-rag-enterprise.vercel.app",
+                    "Access-Control-Request-Method": "POST",
+                    "Access-Control-Request-Headers": "content-type,idempotency-key",
+                },
+            )
+
+    response = asyncio.run(request_preflight())
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "https://agentic-rag-enterprise.vercel.app"
+    assert response.headers["access-control-allow-credentials"] == "true"
+    assert "POST" in response.headers["access-control-allow-methods"]
+
+
 def test_identity_requires_bearer_credentials() -> None:
     async def request_me() -> httpx.Response:
         transport = httpx.ASGITransport(app=app)
