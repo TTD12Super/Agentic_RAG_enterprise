@@ -120,10 +120,12 @@ def reset_state() -> None:
     feedback_service = FeedbackService()
 
 
-def _optional_principal(authorization: str | None) -> AuthenticatedPrincipal | None:
+def _optional_principal(authorization: str | None, request: Request | None = None) -> AuthenticatedPrincipal | None:
     from . import admin as admin_api
 
     chat_service.set_authorization(admin_api.policy_store, admin_api.pep)
+    if authorization is None and request is not None:
+        authorization = request.cookies.get(identity_api.AUTH_COOKIE_NAME)
     if authorization is None:
         return None
     return identity_api.identity_service.resolve_bearer(identity_api._bearer_token(authorization))
@@ -166,7 +168,7 @@ async def create_conversation(
     anonymous_header: Annotated[str | None, Header(alias=ANONYMOUS_SESSION_HEADER)] = None,
 ) -> dict[str, object]:
     context = _context(request, response)
-    principal = _optional_principal(authorization)
+    principal = _optional_principal(authorization, request)
     actor, created_session = chat_service.actor_for_create(
         principal, _anonymous_token(anonymous_session, anonymous_header)
     )
@@ -203,7 +205,7 @@ async def list_conversations(
     anonymous_header: Annotated[str | None, Header(alias=ANONYMOUS_SESSION_HEADER)] = None,
 ) -> dict[str, object]:
     context = _context(request, response)
-    principal = _optional_principal(authorization)
+    principal = _optional_principal(authorization, request)
     actor = chat_service.actor_for_existing(principal, _anonymous_token(anonymous_session, anonymous_header))
     items, total = chat_service.list_conversations(
         actor,
@@ -243,7 +245,7 @@ async def get_conversation(
     anonymous_header: Annotated[str | None, Header(alias=ANONYMOUS_SESSION_HEADER)] = None,
 ) -> dict[str, object]:
     context = _context(request, response)
-    principal = _optional_principal(authorization)
+    principal = _optional_principal(authorization, request)
     actor = chat_service.actor_for_existing(principal, _anonymous_token(anonymous_session, anonymous_header))
     view = chat_service.conversation(actor, conversation_id)
     _safe_audit(context, action="chat:conversation:read", principal=principal, code="CONVERSATION_READ")
@@ -277,7 +279,7 @@ async def submit_message(
     anonymous_header: Annotated[str | None, Header(alias=ANONYMOUS_SESSION_HEADER)] = None,
 ) -> dict[str, object]:
     context = _context(request, response)
-    principal = _optional_principal(authorization)
+    principal = _optional_principal(authorization, request)
     actor = chat_service.actor_for_existing(principal, _anonymous_token(anonymous_session, anonymous_header))
     body = await _body(request, MessageRequest)
     job = chat_service.submit(actor, conversation_id, body.query, idempotency_key=idempotency_key)
@@ -300,7 +302,7 @@ async def stream_message(
     anonymous_header: Annotated[str | None, Header(alias=ANONYMOUS_SESSION_HEADER)] = None,
 ) -> StreamingResponse:
     context = _context(request, response)
-    principal = _optional_principal(authorization)
+    principal = _optional_principal(authorization, request)
     actor = chat_service.actor_for_existing(principal, _anonymous_token(anonymous_session, anonymous_header))
     body = await _body(request, MessageRequest)
     job = chat_service.submit(actor, conversation_id, body.query, idempotency_key=idempotency_key)
@@ -372,7 +374,7 @@ async def _job_status(
     anonymous_header: str | None,
 ) -> dict[str, object]:
     context = _context(request, response)
-    principal = _optional_principal(authorization)
+    principal = _optional_principal(authorization, request)
     actor = chat_service.actor_for_existing(principal, _anonymous_token(anonymous_session, anonymous_header))
     job = chat_service.status(actor, job_id)
     _safe_audit(context, action="chat:query:status", principal=principal, code="QUERY_STATUS_READ")
@@ -416,7 +418,7 @@ async def preview_citation(
     anonymous_session: Annotated[str | None, Cookie(alias=ANONYMOUS_SESSION_COOKIE)] = None,
     anonymous_header: Annotated[str | None, Header(alias=ANONYMOUS_SESSION_HEADER)] = None,
 ) -> dict[str, object]:
-    principal = _optional_principal(authorization)
+    principal = _optional_principal(authorization, request)
     actor = chat_service.actor_for_existing(principal, _anonymous_token(anonymous_session, anonymous_header))
     artifact = chat_service.citation(actor, answer_id, citation_id, download=False)
     return {
@@ -439,7 +441,7 @@ async def download_citation(
     anonymous_session: Annotated[str | None, Cookie(alias=ANONYMOUS_SESSION_COOKIE)] = None,
     anonymous_header: Annotated[str | None, Header(alias=ANONYMOUS_SESSION_HEADER)] = None,
 ) -> RawResponse:
-    principal = _optional_principal(authorization)
+    principal = _optional_principal(authorization, request)
     actor = chat_service.actor_for_existing(principal, _anonymous_token(anonymous_session, anonymous_header))
     artifact = chat_service.citation(actor, answer_id, citation_id, download=True)
     filename = artifact.filename or f"citation-{citation_id}.bin"
@@ -465,7 +467,7 @@ async def submit_feedback(
     anonymous_header: Annotated[str | None, Header(alias=ANONYMOUS_SESSION_HEADER)] = None,
 ) -> JSONResponse:
     context = _context(request, response)
-    principal = _optional_principal(authorization)
+    principal = _optional_principal(authorization, request)
     actor = chat_service.actor_for_existing(principal, _anonymous_token(anonymous_session, anonymous_header))
     chat_service.feedback_target(actor, answer_id)
     body = await _body(request, FeedbackRequest)

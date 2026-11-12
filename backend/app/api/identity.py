@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Header, Request, Response
+from fastapi import APIRouter, Cookie, Header, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..identity.errors import AUTH_REQUIRED, IdentityError
@@ -41,6 +41,8 @@ identity_store = PostgresIdentityStore(_database_url) if _database_url else InMe
 identity_service = AuthenticationService(identity_store)
 audit_sink: AuditSink = PostgresAuditSink(_database_url) if _database_url else InMemoryAuditSink()
 router = APIRouter(tags=["identity", "administration"])
+AUTH_COOKIE_NAME = "enterprise_rag_session"
+SESSION_COOKIE_MAX_AGE = 8 * 60 * 60
 
 
 def _request_context(request: Request, response: Response) -> CorrelationContext:
@@ -102,7 +104,9 @@ def _record_identity_error(
     )
 
 
-def _bearer_token(authorization: str | None) -> str:
+def _bearer_token(authorization: str | None, session_cookie: str | None = None) -> str:
+    if not authorization and session_cookie:
+        return session_cookie
     if not authorization or not authorization.startswith("Bearer "):
         raise AUTH_REQUIRED
     token = authorization.removeprefix("Bearer ").strip()
@@ -111,11 +115,29 @@ def _bearer_token(authorization: str | None) -> str:
     return token
 
 
+def _set_session_cookie(request: Request, response: Response, token: str) -> None:
+    secure = request.url.scheme == "https" or get_settings().environment.lower() in {"staging", "production"}
+    response.set_cookie(
+        AUTH_COOKIE_NAME,
+        token,
+        max_age=SESSION_COOKIE_MAX_AGE,
+        httponly=True,
+        secure=secure,
+        samesite="none" if secure else "lax",
+        path="/",
+    )
+
+
+def _clear_session_cookie(response: Response) -> None:
+    response.delete_cookie(AUTH_COOKIE_NAME, path="/")
+
+
 @router.post("/auth/sign-in", response_model=SignInResponse)
 async def sign_in(
     request: SignInRequest,
     http_request: Request,
     response: Response,
+    session_cookie: Annotated[str | None, Cookie(alias=AUTH_COOKIE_NAME)] = None,
 ) -> SignInResponse:
     context = _request_context(http_request, response)
     try:
@@ -144,6 +166,7 @@ async def sign_in(
         except IdentityError:
             pass
         raise
+    _set_session_cookie(http_request, response, token)
     return SignInResponse(
         access_token=token,
         principal=principal,
@@ -155,10 +178,11 @@ async def current_identity(
     http_request: Request,
     response: Response,
     authorization: Annotated[str | None, Header()] = None,
+    session_cookie: Annotated[str | None, Cookie(alias=AUTH_COOKIE_NAME)] = None,
 ) -> AuthenticatedPrincipal:
     context = _request_context(http_request, response)
     try:
-        principal = identity_service.resolve_bearer(_bearer_token(authorization))
+        principal = identity_service.resolve_bearer(_bearer_token(authorization, session_cookie))
     except IdentityError as error:
         _record_identity_error(context, error, action="identity:me")
         raise
@@ -180,14 +204,16 @@ async def sign_out(
     http_request: Request,
     response: Response,
     authorization: Annotated[str | None, Header()] = None,
+    session_cookie: Annotated[str | None, Cookie(alias=AUTH_COOKIE_NAME)] = None,
 ) -> None:
     context = _request_context(http_request, response)
     try:
-        principal = identity_service.resolve_bearer(_bearer_token(authorization))
+        principal = identity_service.resolve_bearer(_bearer_token(authorization, session_cookie))
         identity_service.revoke(principal)
     except IdentityError as error:
         _record_identity_error(context, error, action="identity:sign_out")
         raise
+    _clear_session_cookie(response)
     _record(
         context,
         event="AUTH_SUCCESS",

@@ -6,7 +6,7 @@ import pytest
 
 from backend.app.api import identity as identity_api
 from backend.app.core.config import get_settings
-from backend.tests._admin_api_fixtures import auth, key, request, reset
+from backend.tests._admin_api_fixtures import add_user, auth, key, request, reset
 
 
 @pytest.fixture(autouse=True)
@@ -86,6 +86,24 @@ def test_anonymous_request_uses_server_configured_tenant(monkeypatch: pytest.Mon
 
     assert listed.status_code == 200
     assert any(item["request_id"] == created["request_id"] for item in listed.json()["items"])
+
+
+def test_http_only_session_cookie_restores_identity_after_reload():
+    email, user_id = add_user("website_manager", tenant="tenant-cookie")
+    signed_in = request(
+        "POST",
+        "/api/v1/auth/sign-in",
+        json={"email": email, "password": "correct-password", "mfa_code": "123456"},
+    )
+    assert signed_in.status_code == 200
+    cookie = signed_in.headers["set-cookie"].split(";", 1)[0]
+
+    current = request("GET", "/api/v1/auth/me", headers={"Cookie": cookie})
+    users = request("GET", "/api/v1/users", headers={"Cookie": cookie})
+
+    assert current.status_code == 200
+    assert current.json()["user_id"] == user_id
+    assert users.status_code == 200
 
 
 @pytest.mark.parametrize("role", ["employee", "chairman"])

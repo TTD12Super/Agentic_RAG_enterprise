@@ -216,7 +216,7 @@ def _resolve(
     context = identity_api._request_context(request, response)
     try:
         principal = identity_api.identity_service.resolve_bearer(
-            identity_api._bearer_token(authorization)
+            identity_api._bearer_token(authorization, request.cookies.get(identity_api.AUTH_COOKIE_NAME))
         )
     except IdentityError as error:
         identity_api._record_identity_error(context, error, action=action)
@@ -1041,10 +1041,11 @@ async def create_access_request(
         raise _problem("IDEMPOTENCY_REQUIRED", "An idempotency key is required.")
 
     principal: AuthenticatedPrincipal | None = None
-    if authorization:
+    session_token = authorization or request.cookies.get(identity_api.AUTH_COOKIE_NAME)
+    if session_token:
         try:
             principal = identity_api.identity_service.resolve_bearer(
-                identity_api._bearer_token(authorization)
+                identity_api._bearer_token(session_token)
             )
         except IdentityError as error:
             identity_api._record_identity_error(context, error, action="identity:access_request")

@@ -1,17 +1,17 @@
 # Graph Report - enterprise-agentic-rag-harness  (2026-11-12)
 
 ## Corpus Check
-- 299 files · ~263,030 words
+- 299 files · ~263,218 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 68 file(s) not represented in the graph (top: (none) 53, .toml 9, .example 2)
 
 ## Summary
-- 4215 nodes · 13249 edges · 183 communities (128 shown, 55 thin omitted)
+- 4221 nodes · 13271 edges · 181 communities (124 shown, 57 thin omitted)
 - Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 1027 edges (avg confidence: 0.9)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ad6235ee`
+- Built from commit: `7cb40169`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -28,9 +28,9 @@
 - otel-collector-config.yaml
 - prometheus
 - InMemoryScopedCache
-- PostgresIdentityStore
+- db/runtime.py
 - core/chat.py
-- CacheScope
+- ModelGateway
 - postgres
 - postgres
 - PromptDefinition
@@ -45,19 +45,19 @@
 - _make_retriever
 - AuthorizationEvaluator
 - chat_api/test_contract_integration.py
-- InMemoryIdentityStore
+- admin.py
 - chat_api/test_behavior_component.py
-- DocumentVersionMetadata
+- make_manifest
 - GraphifyOperationalTests
 - key
 - chat_api/test_security_adversarial.py
 - steps
-- DataClassification
+- hybrid.py
 - ContractIntegrationTests
 - SecurityAdversarialTests
 - rules
-- hashlib
-- dense.py
+- IdentityRecord
+- AuthenticatedPrincipal
 - ToolResult
 - App.tsx
 - route
@@ -65,10 +65,10 @@
 - test_knowledge_database.py
 - chat_api/test_e2e_operational.py
 - expand_parent_context
-- eval_001_runner.py
+- contracts/_baseline.py
 - datasources
 - monitoring/prometheus.yml
-- lifecycle.py
+- authorization/test_behavior_component.py
 - client.ts
 - PromptContractIntegrationTests
 - AuthenticatedPrincipal
@@ -87,7 +87,7 @@
 - answer_baseline/test_behavior_component.py
 - orchestration_langgraph/test_security_adversarial.py
 - model/test_contract_integration.py
-- _common.py
+- _evaluation_harness.py
 - test_authorization.py
 - normalize_user_input
 - backend_boot/_baseline.py
@@ -97,80 +97,77 @@
 - env.py
 - test_tool_gateway.py
 - AnswerDraft
-- main.py
-- load_validated_records
+- test_answer_baseline.py
+- eval_001_runner.py
 - IngestionService
-- EvidenceRecord
-- evaluator
+- Claim
+- ingestion/test_e2e_operational.py
 - FrontendE2EOperationalTests
 - ToolResult
 - new_service
-- test_answer_baseline.py
+- EgressMode
 - read
 - reset
-- ChatView
+- quarantine
 - AuthorizationDecision
 - answer_baseline/test_contract_integration.py
 - BoundedOrchestrator
 - answer_baseline/test_e2e_operational.py
 - read_frontend
-- evidence/test_contract_integration.py
-- Claim
+- InfrastructureSecurityTests
+- IdentityContractTests
 - cache_memory/test_security_adversarial.py
 - App.test.tsx
 - cache_memory/test_contract_integration.py
 - orchestration_langgraph/test_contract_integration.py
 - SecureContextBuilder
 - test_customer_api_e2e.py
-- InfrastructureSecurityTests
+- KnowledgeOperationalTests
 - admin_api/test_contract_integration.py
 - run_local_guardrail_pipeline
-- KnowledgeBehaviorTests
+- ChunkMetadata
 - manifest.json
 - main.py
 - orchestration_langgraph/test_behavior_component.py
-- test_chat_stream.py
+- test_sample_documents.py
 - ConversationMessage
 - ingestion/test_security_adversarial.py
-- ChunkMetadata
-- inherit_acl
+- AuthorizationDecision
+- IdentitySecurityTests
 - ndcg_at_k
 - tree
 - ChatService
 - test_cache_memory.py
 - DocumentsView
-- FakeMemoryRepository
-- tests/test_dashboard_api.py
+- UUID
+- IdentityBehaviorTests
 - read
 - build_secure_context
 - BackendBootstrapContractTests
-- _Model
+- rag_v4_citation/test_e2e_operational.py
 - PromptBehaviorComponentTests
 - observability/context.py
 - app/evidence/__init__.py
 - InMemoryScopedCache
 - ingestion/test_behavior_component.py
-- test_rag_002_metrics.py
+- ConversationMemoryRepository
 - vercel.json
 - db/runtime.py
-- DocumentMetadata
-- to_qdrant_payload
 - UUID
-- ApprovalsView
 - App
+- pathlib
 - package.json
-- DenseRetrievalContractIntegrationTests
 - BackendBootstrapBehaviorTests
 - BehaviorComponentTests
 - test_access_request_review.py
 - authorization/test_e2e_operational.py
 - test_customer_frontend_static.py
-- pytest
+- make_manifest
 - json
 
 ## God Nodes (most connected - your core abstractions)
 1. `auth()` - 151 edges
-2. `request()` - 150 edges
+2. `request()` - 151 edges
 3. `DataClassification` - 137 edges
 4. `IngestionService` - 125 edges
 5. `AuthenticatedPrincipal` - 103 edges
@@ -183,14 +180,14 @@
 ## Surprising Connections (you probably didn't know these)
 - `pause_first_run()` --calls--> `_tenant_uuid()`  [EXTRACTED]
   tests/qa/chat_api/test_e2e_operational.py → backend/app/api/admin.py
+- `test_revoked_document_fails_current_version_policy_check()` --uses--> `Decision`  [INFERRED]
+  tests/qa/admin_api/test_security_adversarial.py → backend/app/authorization/policy.py
 - `test_acl_explicit_deny_overrides_employee_read_allow()` --uses--> `Action`  [INFERRED]
   tests/qa/admin_api/test_security_adversarial.py → backend/app/authorization/policy.py
 - `test_revoked_document_fails_current_version_policy_check()` --uses--> `Action`  [INFERRED]
   tests/qa/admin_api/test_security_adversarial.py → backend/app/authorization/policy.py
 - `test_source_download_is_rechecked_after_read_retrieval()` --uses--> `Action`  [INFERRED]
   tests/qa/evidence/test_e2e_operational.py → backend/app/authorization/policy.py
-- `DenseRetrievalBehaviorTests` --uses--> `Action`  [INFERRED]
-  tests/qa/rag/test_behavior_component.py → backend/app/authorization/policy.py
 
 ## Import Cycles
 - 2-file cycle: `backend/app/api/admin.py -> backend/app/api/chat.py -> backend/app/api/admin.py`
@@ -199,10 +196,10 @@
 - 3-file cycle: `backend/app/api/admin.py -> backend/app/api/chat.py -> backend/app/api/identity.py -> backend/app/api/admin.py`
 - 3-file cycle: `backend/app/api/admin.py -> backend/app/api/identity.py -> backend/app/api/chat.py -> backend/app/api/admin.py`
 
-## Communities (183 total, 55 thin omitted)
+## Communities (181 total, 57 thin omitted)
 
 ### Community 0 - "audit.py"
-Cohesion: 0.11
+Cohesion: 0.10
 Nodes (17): append_audit_event(), AuditEvent, AuditSink, AuditSinkUnavailable, InMemoryAuditSink, redact_metadata(), _safe_code(), _safe_identifier() (+9 more)
 
 ### Community 1 - "compose"
@@ -222,20 +219,20 @@ Cohesion: 0.05
 Nodes (7): read(), task(), tasks(), AuditBehaviorTests, AuditContractTests, AuditOperationalTests, AuditSecurityTests
 
 ### Community 5 - "section"
-Cohesion: 0.05
-Nodes (11): dfs(), json_blocks(), require_all(), section(), BehaviorComponentTests, ContractIntegrationTests, E2EOperationalTests, SecurityAdversarialTests (+3 more)
+Cohesion: 0.13
+Nodes (5): require_all(), section(), BehaviorComponentTests, E2EOperationalTests, SecurityAdversarialTests
 
 ### Community 6 - "read"
 Cohesion: 0.06
 Nodes (7): dashboard(), read(), task(), MonitoringBehaviorTests, MonitoringContractTests, MonitoringOperationalTests, MonitoringSecurityTests
 
 ### Community 7 - "InMemoryDerivedIndex"
-Cohesion: 0.14
-Nodes (4): _chunk_state(), DerivedIndex, DerivedIndexFailure, InMemoryDerivedIndex
+Cohesion: 0.09
+Nodes (15): _acl_digest(), _chunk_digest(), _chunk_state(), DerivedIndex, DerivedIndexFailure, DerivedIndexRecord, IndexManifest, IndexPublicationStatus (+7 more)
 
 ### Community 8 - "read"
 Cohesion: 0.09
-Nodes (4): read(), GraphifyBehaviorTests, GraphifyContractTests, GraphifySecurityTests
+Nodes (5): graph(), read(), GraphifyBehaviorTests, GraphifyContractTests, GraphifySecurityTests
 
 ### Community 9 - "otel-collector-config.yaml"
 Cohesion: 0.06
@@ -247,19 +244,19 @@ Nodes (30): command, image, ports, read_only, security_opt, volumes, depends_on,
 
 ### Community 12 - "InMemoryScopedCache"
 Cohesion: 0.07
-Nodes (9): _CacheEntry, _component(), _digest(), _identifier(), InvalidationReason, ScopedCacheAdapter, ScopedCacheKey, _serialized_size() (+1 more)
+Nodes (10): _CacheEntry, _component(), _digest(), _identifier(), InvalidationReason, ScopedCacheAdapter, ScopedCacheKey, _serialized_size() (+2 more)
 
-### Community 13 - "PostgresIdentityStore"
-Cohesion: 0.12
-Nodes (4): _department_uuid(), IdentityRecord, normalize_roles(), PostgresIdentityStore
+### Community 13 - "db/runtime.py"
+Cohesion: 0.08
+Nodes (12): _payload(), _department_uuid(), _membership_uuid(), normalize_database_url(), _PostgresAdapter, stable_uuid(), _tenant_slug(), user_uuid() (+4 more)
 
 ### Community 14 - "core/chat.py"
 Cohesion: 0.07
-Nodes (13): ActorKind, AnonymousSession, CheckpointRepository, _citation_expired(), ConversationRepository, ConversationSummary, ConversationView, DurableChatRepository (+5 more)
+Nodes (16): CacheScope, StaleScopeError, ActorKind, AnonymousSession, CheckpointRepository, _citation_expired(), ConversationRepository, ConversationSummary (+8 more)
 
-### Community 15 - "CacheScope"
-Cohesion: 0.12
-Nodes (8): CacheScope, StaleScopeError, InMemoryChatRepository, JobCheckpoint, MessageRecord, QueryJob, QueryJobRepository, _jsonb()
+### Community 15 - "ModelGateway"
+Cohesion: 0.17
+Nodes (38): DataClassification, ModelTask, FakeEmbedding, policy(), provider(), route(), test_approved_local_fallback_can_handle_internal_data(), test_approved_local_provider_can_process_internal_data() (+30 more)
 
 ### Community 16 - "postgres"
 Cohesion: 0.10
@@ -275,14 +272,14 @@ Nodes (5): default_prompt_registry(), _freeze(), PromptDefinition, PromptRegistr
 
 ### Community 19 - "package.json"
 Cohesion: 0.05
-Nodes (51): dependencies, react@18.3.1, react-dom@18.3.1, vite@6.3.5, @vitejs/plugin-react@4.6.0, devDependencies, eslint@9.17.0, @eslint/js@9.17.0 (+43 more)
+Nodes (52): dependencies, react@18.3.1, react-dom@18.3.1, vite@6.3.5, @vitejs/plugin-react@4.6.0, devDependencies, eslint@9.17.0, @eslint/js@9.17.0 (+44 more)
 
 ### Community 20 - "answer_baseline/test_security_adversarial.py"
-Cohesion: 0.10
-Nodes (19): AnswerModelGateway, GeneratedAnswer, _AnswerModel, _allow(), FakeModelGateway, _pipeline(), test_cross_tenant_evidence_is_absent_from_dense_bm25_and_answer(), test_direct_prompt_injection_is_denied_before_retrieval_and_model() (+11 more)
+Cohesion: 0.12
+Nodes (17): GeneratedAnswer, _LocalAnswerModel, _allow(), FakeModelGateway, _pipeline(), test_cross_tenant_evidence_is_absent_from_dense_bm25_and_answer(), test_direct_prompt_injection_is_denied_before_retrieval_and_model(), test_duplicate_and_unknown_citation_ids_do_not_duplicate_or_leak_metadata() (+9 more)
 
 ### Community 21 - "AuthorizationContractIntegrationTests"
-Cohesion: 0.26
+Cohesion: 0.27
 Nodes (4): AuthorizationContractIntegrationTests, document(), evaluator(), principal()
 
 ### Community 22 - "orchestration/context.py"
@@ -294,104 +291,100 @@ Cohesion: 0.11
 Nodes (18): compilerOptions, allowJs, allowSyntheticDefaultImports, esModuleInterop, forceConsistentCasingInFileNames, isolatedModules, jsx, lib (+10 more)
 
 ### Community 24 - "InMemoryConversationMemory"
-Cohesion: 0.13
-Nodes (3): InvalidationEvent, ConversationMemoryRepository, InMemoryConversationMemory
+Cohesion: 0.12
+Nodes (3): InvalidationEvent, InMemoryConversationMemory, FakeMemoryRepository
 
 ### Community 25 - "model/test_e2e_operational.py"
-Cohesion: 0.09
-Nodes (35): graph_labels(), policy(), provider(), route(), run_graph_query(), ScriptedEmbedding, task(), test_embedding_route_task_is_checked() (+27 more)
+Cohesion: 0.10
+Nodes (21): ModelGateway, ModelUnavailable, graph_labels(), policy(), run_graph_query(), ScriptedEmbedding, ScriptedReranker, task() (+13 more)
 
 ### Community 26 - "api/chat.py"
 Cohesion: 0.09
 Nodes (28): _anonymous_token(), _body(), _context(), create_conversation(), download_citation(), FeedbackRequest, get_conversation(), get_query_completion() (+20 more)
 
 ### Community 27 - "_make_retriever"
-Cohesion: 0.06
-Nodes (62): AuthorizationEvaluator, InMemoryPolicyStore, PolicyEnforcementPoint, DenseRetriever, InMemoryDenseVectorIndex, HybridRetrievalConfig, HybridRetriever, InMemoryBM25Index (+54 more)
+Cohesion: 0.09
+Nodes (50): AccessGrant, Action, Effect, PolicyEnforcementPoint, DenseRetriever, InMemoryDenseVectorIndex, HybridRetrievalConfig, InMemoryBM25Index (+42 more)
 
 ### Community 28 - "AuthorizationEvaluator"
 Cohesion: 0.07
-Nodes (18): AccessGrant, Action, AuthorizationDenied, deny(), Classification, ConversationResource, DocumentResource, Effect (+10 more)
+Nodes (12): AuthorizationDenied, AuthorizationEvaluator, deny(), Classification, DocumentResource, _normalize_action(), PolicyDecision, PolicyStore (+4 more)
 
 ### Community 29 - "chat_api/test_contract_integration.py"
 Cohesion: 0.12
-Nodes (19): job_payload(), JobState, anonymous_conversation(), authenticated_conversation(), Clock, Executor, Maintenance, make_service() (+11 more)
+Nodes (18): job_payload(), anonymous_conversation(), authenticated_conversation(), Clock, Executor, Maintenance, make_service(), principal() (+10 more)
 
-### Community 30 - "InMemoryIdentityStore"
-Cohesion: 0.10
-Nodes (6): DepartmentRecord, Role, hash_secret(), InMemoryIdentityStore, verify_secret(), test_noncanonical_role_cannot_create_identity()
+### Community 30 - "admin.py"
+Cohesion: 0.09
+Nodes (25): _access_request_payload(), AccessGrantRequest, AccessRequest, AccessRequestReview, AdminApiState, _counts(), _dashboard_metric(), _dashboard_metrics() (+17 more)
 
 ### Community 31 - "chat_api/test_behavior_component.py"
-Cohesion: 0.15
-Nodes (19): AnswerState, anonymous_conversation(), authenticated_conversation(), Clock, Executor, Maintenance, make_service(), principal() (+11 more)
+Cohesion: 0.14
+Nodes (21): AnswerState, JobState, _answer_status(), anonymous_conversation(), authenticated_conversation(), Clock, Executor, Maintenance (+13 more)
 
-### Community 32 - "DocumentVersionMetadata"
-Cohesion: 0.11
-Nodes (11): DocumentVersionMetadata, test_active_chunk_requires_acl_metadata(), test_chunk_rejects_reversed_pages(), test_chunk_rejects_self_parent(), test_document_version_identity_is_stable(), test_document_version_requires_private_source(), test_hashes_are_normalized(), test_root_chunk_can_have_no_parent() (+3 more)
+### Community 32 - "make_manifest"
+Cohesion: 0.18
+Nodes (13): make_manifest(), test_pdf_is_accepted(), graph_labels(), read(), task(), test_failed_new_publication_preserves_previous_active_version(), test_job_contract_keeps_attempt_and_tenant_scope(), test_legacy_doc_and_xls_are_rejected() (+5 more)
 
 ### Community 33 - "GraphifyOperationalTests"
-Cohesion: 0.11
-Nodes (5): DatabaseMigrationSmokeTests, graph(), graphify_bin(), run_graphify(), GraphifyOperationalTests
+Cohesion: 0.10
+Nodes (5): DatabaseMigrationSmokeTests, graphify_bin(), run_graphify(), GraphifyOperationalTests, run_graph_query()
 
 ### Community 34 - "key"
 Cohesion: 0.11
-Nodes (36): ScanVerdict, key(), prepare_review_two(), publish(), test_manager_activates_provisioned_account(), test_manager_completes_two_review_publication(), test_manager_provisions_inactive_employee(), test_manager_uploads_into_quarantine() (+28 more)
+Nodes (39): ScanVerdict, key(), prepare_review_two(), publish(), test_manager_activates_provisioned_account(), test_manager_completes_two_review_publication(), test_manager_provisions_inactive_employee(), test_manager_uploads_into_quarantine() (+31 more)
 
 ### Community 35 - "chat_api/test_security_adversarial.py"
-Cohesion: 0.17
-Nodes (17): QueryCompletion, anonymous_conversation(), authenticated_conversation(), Clock, Executor, Maintenance, make_service(), principal() (+9 more)
+Cohesion: 0.12
+Nodes (22): QueryCompletion, RuntimeDatabaseUnavailable, IdentityError, anonymous_conversation(), authenticated_conversation(), Clock, Executor, Maintenance (+14 more)
 
 ### Community 36 - "steps"
 Cohesion: 0.15
 Nodes (12): jobs, validate, name, on, pull_request, workflow_dispatch, run, uses (+4 more)
 
-### Community 37 - "DataClassification"
-Cohesion: 0.06
-Nodes (72): ModelEgressDenied, ModelGateway, ModelProviderError, ModelUnavailable, EmbeddingAdapter, EmbeddingRequest, EmbeddingResult, RankedDocument (+64 more)
+### Community 37 - "hybrid.py"
+Cohesion: 0.10
+Nodes (12): ModelProviderError, EmbeddingAdapter, EmbeddingRequest, EmbeddingResult, RankedDocument, RerankerAdapter, RerankerResult, ModelRoute (+4 more)
 
 ### Community 40 - "rules"
 Cohesion: 0.17
 Nodes (11): runbook, summary, groups, name, rules, severity, alert, annotations (+3 more)
 
-### Community 41 - "hashlib"
-Cohesion: 0.07
-Nodes (18): IdentityError, rate_limited(), SessionRecord, utc_z(), AuthenticationService, IdentityErrorPassthrough, now_utc(), IdentityStore (+10 more)
+### Community 41 - "IdentityRecord"
+Cohesion: 0.05
+Nodes (22): rate_limited(), IdentityRecord, SessionRecord, utc_z(), AuthenticationService, IdentityErrorPassthrough, now_utc(), hash_secret() (+14 more)
 
-### Community 42 - "dense.py"
-Cohesion: 0.14
-Nodes (9): _citation(), _cosine(), DenseEvidence, DenseRetrievalResult, SourceFetchResult, _uuid(), _valid_locator(), _vectorize() (+1 more)
+### Community 42 - "AuthenticatedPrincipal"
+Cohesion: 0.12
+Nodes (11): AuthenticatedPrincipal, _citation(), _cosine(), DenseEvidence, DenseRetrievalResult, SourceFetchResult, _uuid(), _valid_locator() (+3 more)
 
 ### Community 43 - "ToolResult"
 Cohesion: 0.10
 Nodes (14): AuthorizedScope, GetDocumentMetadataArguments, PrincipalResolver, ReadAuthorizedChunkArguments, _safe_tool_result(), ScopeResolver, SearchDocumentsArguments, ToolBackend (+6 more)
 
 ### Community 44 - "App.tsx"
-Cohesion: 0.09
-Nodes (35): ApprovalRecord, getDashboard(), setAccessToken(), signIn(), submitAccessRequest(), UserRecord, AdminGuardView(), AnswerDetails() (+27 more)
+Cohesion: 0.10
+Nodes (24): getDashboard(), AnswerDetails(), AnswerDetailsBody(), AnswerDetailsProps, AuthMode, submitSignIn(), canAdmin(), ChatViewProps (+16 more)
 
 ### Community 45 - "route"
 Cohesion: 0.18
 Nodes (10): global, resolve_timeout, receivers, name, route, group_by, group_interval, group_wait (+2 more)
 
 ### Community 46 - "gemini.py"
-Cohesion: 0.12
-Nodes (7): GeminiProviderError, GeminiStreamProvider, _http_error_code(), _text_parts(), _FakeGemini, test_gemini_adapter_uses_server_header_and_parses_sse_without_echoing_key(), close()
+Cohesion: 0.07
+Nodes (25): AnonymousPrincipal, GeminiProviderError, GeminiStreamProvider, _http_error_code(), _text_parts(), LocalRagExecutor, anonymous_conversation(), clean_state() (+17 more)
 
 ### Community 47 - "test_knowledge_database.py"
 Cohesion: 0.26
 Nodes (11): migration_text(), test_existing_db_contract_has_active_index_guard(), test_existing_db_contract_has_chunks_table(), test_existing_db_contract_has_composite_parent_fk(), test_existing_db_contract_has_document_versions_table(), test_existing_db_contract_has_documents_table(), test_existing_db_contract_has_immutable_version_uniqueness(), test_existing_db_contract_has_private_source_constraint() (+3 more)
 
 ### Community 48 - "chat_api/test_e2e_operational.py"
-Cohesion: 0.23
-Nodes (15): anonymous_conversation(), HttpExecutor, request(), sign_in(), test_http_anonymous_lifecycle_and_session_isolation(), test_http_authenticated_history_and_job_are_owner_only(), test_http_citation_preview_and_download_reauthorize_after_revocation(), test_http_deadline_failure_is_safe_and_has_no_answer() (+7 more)
+Cohesion: 0.13
+Nodes (18): test_healthz_is_local_liveness_only(), test_identity_requires_bearer_credentials(), test_vercel_origin_can_use_cookie_authenticated_api(), anonymous_conversation(), HttpExecutor, request(), sign_in(), test_http_anonymous_lifecycle_and_session_isolation() (+10 more)
 
 ### Community 49 - "expand_parent_context"
 Cohesion: 0.08
-Nodes (53): _active(), ChildEvidence, _coerce_child(), _coerce_parent(), _construct(), expand_parent_context(), _identity(), _index_parents() (+45 more)
-
-### Community 50 - "eval_001_runner.py"
-Cohesion: 0.18
-Nodes (12): _aggregate(), _AnswerModel, _Case, _DenseAsHybrid, evaluate(), _make_case(), _mean(), _percentile() (+4 more)
+Nodes (54): _active(), ChildEvidence, _coerce_child(), _coerce_parent(), _construct(), expand_parent_context(), _identity(), _index_parents() (+46 more)
 
 ### Community 51 - "datasources"
 Cohesion: 0.22
@@ -401,57 +394,57 @@ Nodes (8): apiVersion, datasources, access, editable, isDefault, name, type, url
 Cohesion: 0.22
 Nodes (8): global, evaluation_interval, scrape_interval, rule_files, scrape_configs, job_name, static_configs, targets
 
-### Community 53 - "lifecycle.py"
-Cohesion: 0.17
-Nodes (9): ApprovalBlocked, ApprovalRecord, IdempotencyConflict, IndexPublication, InvalidInput, PublicationBlocked, _status(), VersionRecord (+1 more)
+### Community 53 - "authorization/test_behavior_component.py"
+Cohesion: 0.32
+Nodes (5): ConversationResource, AuthorizationBehaviorTests, document(), evaluator(), principal()
 
 ### Community 54 - "client.ts"
-Cohesion: 0.08
-Nodes (32): AccessGrant, AccessRequestMetadata, AccessRequestResponse, answerFromStream(), ApiError, AuditRecord, Conversation, ConversationMessage (+24 more)
+Cohesion: 0.07
+Nodes (35): AccessGrant, AccessRequestMetadata, AccessRequestResponse, answerFromStream(), ApiError, ApprovalRecord, AuditRecord, Conversation (+27 more)
 
 ### Community 56 - "AuthenticatedPrincipal"
-Cohesion: 0.04
-Nodes (61): AuthenticatedPrincipal, DOCXLocator, _ImmutableModel, PDFLocator, SourceSpan, XLSXLocator, _answer_citation(), AnswerCitation (+53 more)
+Cohesion: 0.07
+Nodes (33): PDFLocator, AnswerCitation, Citation, _citation(), _FusedCandidate, HybridEvidence, HybridRetrievalResult, _AnswerModel (+25 more)
 
 ### Community 57 - "request"
-Cohesion: 0.13
-Nodes (30): activateUser(), createDepartment(), createUser(), deleteDocument(), getAccessRequests(), getConversations(), getCurrentIdentity(), getDepartments() (+22 more)
+Cohesion: 0.11
+Nodes (37): activateUser(), createDepartment(), createUser(), deleteDocument(), getAccessRequests(), getApprovals(), getConversations(), getCurrentIdentity() (+29 more)
 
 ### Community 58 - "_resolve"
-Cohesion: 0.09
-Nodes (67): _access_request_payload(), AccessGrantRequest, AccessRequest, AccessRequestReview, activate_user(), AdminApiState, approve_document_version(), _body() (+59 more)
+Cohesion: 0.22
+Nodes (37): activate_user(), approve_document_version(), _body(), _bump_policy_epoch(), create_department(), create_user(), delete_document(), _department_payload() (+29 more)
 
 ### Community 59 - "upload"
-Cohesion: 0.14
-Nodes (22): Decision, add_user(), upload(), test_acl_explicit_deny_overrides_employee_read_allow(), test_anonymous_cannot_upload(), test_chairman_cannot_approve(), test_chairman_cannot_upload(), test_cross_tenant_document_is_not_revealed() (+14 more)
+Cohesion: 0.15
+Nodes (20): Decision, add_user(), upload(), test_acl_explicit_deny_overrides_employee_read_allow(), test_anonymous_cannot_upload(), test_chairman_cannot_approve(), test_chairman_cannot_upload(), test_cross_tenant_document_is_not_revealed() (+12 more)
 
 ### Community 60 - "admin_api/test_behavior_component.py"
-Cohesion: 0.15
-Nodes (12): clean_state(), _prepare_review_two_without_index_ack(), test_manager_activates_provisioned_account(), test_manager_completes_two_review_publication(), test_manager_provisions_inactive_employee(), test_manager_uploads_into_quarantine(), test_publish_requires_acknowledged_index(), test_quarantined_document_is_not_readable() (+4 more)
+Cohesion: 0.16
+Nodes (11): clean_state(), _prepare_review_two_without_index_ack(), test_manager_activates_provisioned_account(), test_manager_completes_two_review_publication(), test_manager_provisions_inactive_employee(), test_manager_uploads_into_quarantine(), test_publish_requires_acknowledged_index(), test_quarantined_document_is_not_readable() (+3 more)
 
 ### Community 61 - "tests/test_chat_api.py"
 Cohesion: 0.20
 Nodes (13): anonymous_conversation(), authenticated_headers(), request(), StubExecutor, test_anonymous_submit_status_completion_and_history_are_session_scoped(), test_authenticated_history_is_owner_only_and_revocation_denies_reuse(), test_citation_preview_and_download_are_separate_fresh_authorization_checks(), test_cross_origin_anonymous_cookie_is_usable_by_vercel_fetch() (+5 more)
 
 ### Community 62 - "request"
-Cohesion: 0.10
-Nodes (51): auth(), request(), test_account_response_does_not_return_password(), test_approval_schema_requires_explicit_stage(), test_existing_sign_in_contract_remains_under_auth_prefix(), test_job_status_contains_redacted_progress_only(), test_mutating_post_requires_idempotency_key(), test_problem_response_uses_safe_media_type_for_anonymous_admin_call() (+43 more)
+Cohesion: 0.09
+Nodes (56): auth(), request(), test_account_response_does_not_return_password(), test_approval_schema_requires_explicit_stage(), test_existing_sign_in_contract_remains_under_auth_prefix(), test_job_status_contains_redacted_progress_only(), test_mutating_post_requires_idempotency_key(), test_problem_response_uses_safe_media_type_for_anonymous_admin_call() (+48 more)
 
 ### Community 86 - "answer_baseline/test_behavior_component.py"
-Cohesion: 0.15
-Nodes (19): _authorization(), authorize(), FakeModelGateway, _pipeline(), RaisingRetriever, RaisingVerifier, StaticRetriever, test_constructor_rejects_non_positive_top_k() (+11 more)
+Cohesion: 0.09
+Nodes (23): AnswerModelGateway, AnswerResult, AnswerStatus, DirectAnswerPipeline, PreparedAnswer, _authorization(), FakeModelGateway, _pipeline() (+15 more)
 
 ### Community 87 - "orchestration_langgraph/test_security_adversarial.py"
 Cohesion: 0.13
 Nodes (20): Answerer, Backend, call(), Clock, gateway(), Policy, principal(), request() (+12 more)
 
 ### Community 88 - "model/test_contract_integration.py"
-Cohesion: 0.21
-Nodes (12): test_mapping_loads_versioned_policy_without_credentials(), test_policy_rejects_credential_fields(), mapping(), test_access_token_field_is_rejected(), test_embedding_gateway_contract_passes_request_route_and_timeout(), test_exact_api_key_field_is_rejected(), test_mapping_rejects_empty_model_revision(), test_secret_key_field_is_rejected() (+4 more)
+Cohesion: 0.23
+Nodes (13): ModelPolicy, test_mapping_loads_versioned_policy_without_credentials(), test_policy_rejects_credential_fields(), mapping(), test_access_token_field_is_rejected(), test_exact_api_key_field_is_rejected(), test_fallback_route_task_mismatch_is_rejected(), test_mapping_rejects_empty_model_revision() (+5 more)
 
-### Community 89 - "_common.py"
-Cohesion: 0.20
-Nodes (3): load_frontend_json(), read(), FrontendContractIntegrationTests
+### Community 89 - "_evaluation_harness.py"
+Cohesion: 0.21
+Nodes (7): _vectorize(), load_records(), load_validated_records(), unauthorized_retrieval_rate(), validate_dataset(), validate_record(), _validate_span()
 
 ### Community 90 - "test_authorization.py"
 Cohesion: 0.36
@@ -466,16 +459,16 @@ Cohesion: 0.22
 Nodes (4): assignment(), pyproject(), route_calls(), route_path()
 
 ### Community 94 - "rag/runtime.py"
-Cohesion: 0.11
-Nodes (14): AnonymousPrincipal, AnswerStatus, _answer_covers_evidence(), _answer_has_term(), _claim_terms(), _LocalAnswerModel, LocalRagExecutor, _relevant_evidence() (+6 more)
+Cohesion: 0.48
+Nodes (4): _answer_covers_evidence(), _answer_has_term(), _claim_terms(), _relevant_evidence()
 
 ### Community 95 - "evaluator"
-Cohesion: 0.43
-Nodes (4): AuthorizationSecurityAdversarialTests, document(), evaluator(), principal()
+Cohesion: 0.27
+Nodes (5): InMemoryPolicyStore, AuthorizationSecurityAdversarialTests, document(), evaluator(), principal()
 
 ### Community 96 - "inherit_acl"
-Cohesion: 0.17
-Nodes (5): make_child(), make_parent(), make_version(), KnowledgeContractIntegrationTests, KnowledgeSecurityAdversarialTests
+Cohesion: 0.13
+Nodes (18): inherit_acl(), make_child(), make_parent(), test_conflicting_child_acl_is_denied(), test_document_mismatch_is_denied(), test_matching_child_acl_is_preserved(), test_missing_child_acl_is_inherited(), test_qdrant_projection_does_not_claim_authority() (+10 more)
 
 ### Community 97 - "env.py"
 Cohesion: 0.38
@@ -486,36 +479,40 @@ Cohesion: 0.15
 Nodes (22): _Backend, _call(), _Clock, _gateway(), _Policy, _principal(), _Resolvers, test_backend_exception_is_unavailable_without_raw_error() (+14 more)
 
 ### Community 99 - "AnswerDraft"
-Cohesion: 0.23
-Nodes (20): ToolResult, _Answerer, _Clock, _evidence(), _orchestrator(), _request(), test_answerer_error_is_returned_as_safe_error(), test_complex_route_splits_subqueries_and_preserves_bound() (+12 more)
+Cohesion: 0.26
+Nodes (20): AnswerDraft, _Answerer, _Clock, _evidence(), _orchestrator(), _request(), test_answerer_error_is_returned_as_safe_error(), test_complex_route_splits_subqueries_and_preserves_bound() (+12 more)
 
-### Community 102 - "load_validated_records"
-Cohesion: 0.22
-Nodes (13): evaluation_snapshot(), load_validated_records(), test_all_golden_cases_run_through_v1_v3(), test_allowed_answer_has_no_unauthorized_retrieval_marker(), test_answered_case_keeps_citation_version_and_tenant_binding(), test_dataset_contains_permission_negative_and_cross_tenant_cases(), test_empty_query_is_denied_before_retrieval(), test_model_failure_returns_error_without_source_or_answer() (+5 more)
-
-### Community 103 - "IngestionService"
-Cohesion: 0.14
-Nodes (20): IngestionService, _active_document(), _principal(), _retriever(), test_dense_retrieval_returns_authorized_current_chunk_only(), test_explicit_deny_candidates_are_not_exposed(), test_forbidden_source_fetch_is_redacted_without_content_or_citation(), test_active_retrieval_to_evidence_verification_succeeds() (+12 more)
-
-### Community 104 - "EvidenceRecord"
-Cohesion: 0.27
-Nodes (13): SourceSpan, citation(), test_authorization_callback_error_fails_closed(), test_current_active_version_is_required_by_authorization_attestation(), test_negation_mismatch_is_conflicting_not_supported(), test_numeric_mismatch_is_conflicting_not_supported(), test_repeated_verification_is_deterministic(), test_source_span_and_citation_metadata_are_immutable() (+5 more)
-
-### Community 105 - "evaluator"
-Cohesion: 0.40
-Nodes (4): AuthorizationBehaviorTests, document(), evaluator(), principal()
-
-### Community 107 - "ToolResult"
-Cohesion: 0.30
-Nodes (16): Answerer, Clock, evidence(), request(), run(), test_answer_provider_failure_returns_error_without_exception_to_user(), test_deadline_timeout_is_a_visible_insufficient_outcome(), test_second_retrieval_round_recovers_a_temporarily_insufficient_answer() (+8 more)
-
-### Community 108 - "new_service"
-Cohesion: 0.08
-Nodes (55): ScanReport, active(), new_service(), quarantine(), staged(), test_acknowledged_index_is_still_not_active(), test_clean_review_one_allows_processing(), test_processing_inherits_parent_acl() (+47 more)
-
-### Community 109 - "test_answer_baseline.py"
+### Community 100 - "test_answer_baseline.py"
 Cohesion: 0.32
 Nodes (10): _authorization(), authorize(), FakeModelGateway, _pipeline(), test_direct_answer_returns_insufficient_without_calling_model_when_no_match(), test_direct_answer_returns_partial_for_mixed_claims(), test_direct_answer_returns_supported_answer_and_authorized_citation(), test_guardrail_failure_fails_closed_before_model_call() (+2 more)
+
+### Community 102 - "eval_001_runner.py"
+Cohesion: 0.10
+Nodes (26): _aggregate(), _AnswerModel, _Case, _DenseAsHybrid, evaluate(), evaluation_snapshot(), _make_case(), authorize() (+18 more)
+
+### Community 103 - "IngestionService"
+Cohesion: 0.13
+Nodes (19): IngestionService, _active_document(), _principal(), _retriever(), test_dense_retrieval_returns_authorized_current_chunk_only(), test_active_retrieval_to_evidence_verification_succeeds(), test_cross_tenant_retrieval_is_empty_and_cannot_be_verified(), test_policy_store_failure_denies_search_and_source_fetch() (+11 more)
+
+### Community 104 - "Claim"
+Cohesion: 0.13
+Nodes (31): Claim, EvidenceRecord, SourceSpan, citation(), test_authorizer_must_attest_active_current_and_not_revoked(), test_citation_and_source_span_are_immutable(), test_conflicting_numeric_source_spans_are_disclosed(), test_denial_result_does_not_leak_source_text() (+23 more)
+
+### Community 105 - "ingestion/test_e2e_operational.py"
+Cohesion: 0.22
+Nodes (7): test_audit_event_is_structured_without_source_checksum(), test_changed_checksum_cannot_enter_retry(), test_cleanup_failure_blocks_maintenance_recovery_then_recovery_succeeds(), test_end_to_end_clean_upload_becomes_retrievable_only_after_publish(), test_invalid_scan_is_terminal_and_not_retryable(), test_only_one_maintenance_window_can_run_per_tenant(), test_permanent_delete_requires_retention_and_removes_document()
+
+### Community 107 - "ToolResult"
+Cohesion: 0.25
+Nodes (17): ToolResult, Answerer, Clock, evidence(), request(), run(), test_answer_provider_failure_returns_error_without_exception_to_user(), test_deadline_timeout_is_a_visible_insufficient_outcome() (+9 more)
+
+### Community 108 - "new_service"
+Cohesion: 0.14
+Nodes (20): active(), staged(), test_acknowledged_index_is_still_not_active(), test_derived_cleanup_failure_still_denies_retrieval(), test_derived_index_cannot_authorize_non_active_version(), test_legal_hold_blocks_permanent_delete(), test_rejected_version_cannot_be_retrieved(), test_revoked_version_cannot_be_retrieved_from_derived_state() (+12 more)
+
+### Community 109 - "EgressMode"
+Cohesion: 0.20
+Nodes (22): ModelEgressDenied, EgressMode, provider(), route(), test_embedding_route_task_is_checked(), test_external_internal_requires_dpa(), test_external_internal_requires_residency(), test_external_provider_requires_retention_policy() (+14 more)
 
 ### Community 110 - "read"
 Cohesion: 0.16
@@ -525,45 +522,37 @@ Nodes (5): backend_boot_task(), compile_sources_without_writes(), read(), task_p
 Cohesion: 0.06
 Nodes (21): reset_state(), reset_state(), reset(), clean_state(), clean_state(), clean_state(), clean_state(), clean_state() (+13 more)
 
-### Community 112 - "ChatView"
-Cohesion: 0.27
-Nodes (11): getAuditEvents(), getFeedback(), AuditView(), load(), ChatView(), closeHistory(), handleKeyDown(), newChat() (+3 more)
+### Community 112 - "quarantine"
+Cohesion: 0.15
+Nodes (24): new_service(), quarantine(), test_publishing_new_version_supersedes_previous_version(), test_rejected_scan_is_terminal_and_not_retrievable(), test_review_one_requires_clean_scan(), test_revoke_active_version_removes_retrieval(), test_second_review_and_publish_make_version_active(), test_soft_delete_isolates_all_versions() (+16 more)
 
 ### Community 113 - "AuthorizationDecision"
-Cohesion: 0.19
-Nodes (22): EvidenceRecord, EvidenceVerifier, VerificationRequest, evidence_for(), verify_retrieved(), authorize(), allow_active(), citation() (+14 more)
+Cohesion: 0.16
+Nodes (20): ClaimVerification, EvidenceVerifier, VerificationRequest, VerificationResult, allow_active(), citation(), test_authorization_callback_exception_fails_closed(), test_cross_tenant_evidence_is_denied_before_authorizer_invocation() (+12 more)
 
 ### Community 114 - "answer_baseline/test_contract_integration.py"
 Cohesion: 0.19
 Nodes (15): _allow(), RecordingModel, RecordingRetriever, _setup(), test_citation_authorization_rejects_document_mismatch(), test_citation_authorization_rejects_non_active_status(), test_citation_authorization_rejects_non_current_version(), test_citation_authorization_rejects_revoked_source() (+7 more)
 
 ### Community 115 - "BoundedOrchestrator"
-Cohesion: 0.10
-Nodes (11): AssembledContext, AnswerSynthesizer, BoundedOrchestrator, _evidence_from_result(), _GraphState, OrchestrationOutcome, OrchestrationStatus, QueryRoute (+3 more)
+Cohesion: 0.08
+Nodes (13): NoopQueryExecutor, AssembledContext, AnswerSynthesizer, BoundedOrchestrator, _evidence_from_result(), _GraphState, OrchestrationOutcome, OrchestrationRequest (+5 more)
 
 ### Community 116 - "answer_baseline/test_e2e_operational.py"
-Cohesion: 0.09
-Nodes (32): AuthorizationDecision, allow(), authorize(), revoked(), revoked(), current_v2(), authorize(), test_direct_answer_context_includes_authorized_parent_runtime() (+24 more)
+Cohesion: 0.18
+Nodes (14): FailingEmbedder, FailingReranker, FakeAnswerGateway, _setup(), test_operational_abstention_is_insufficient_evidence(), test_operational_conflicting_evidence_is_not_harmonized(), test_operational_denied_content_never_appears_in_failure_result(), test_operational_embedding_failure_does_not_fallback_to_bm25() (+6 more)
 
 ### Community 117 - "read_frontend"
-Cohesion: 0.14
+Cohesion: 0.13
 Nodes (3): read_frontend(), FrontendBehaviorComponentTests, FrontendSecurityAdversarialTests
 
-### Community 118 - "evidence/test_contract_integration.py"
-Cohesion: 0.23
-Nodes (6): allow_active(), citation(), test_chat_001_owns_preview_download_reauthorization_recheck(), test_duplicate_evidence_ids_are_a_malformed_fail_closed_result(), authorize(), test_supported_result_round_trips_tenant_document_version_and_span()
-
-### Community 119 - "Claim"
-Cohesion: 0.35
-Nodes (13): Claim, allow_active(), citation(), test_authorizer_must_attest_active_current_and_not_revoked(), test_citation_and_source_span_are_immutable(), test_conflicting_numeric_source_spans_are_disclosed(), test_denial_result_does_not_leak_source_text(), test_stale_version_is_denied_even_when_text_matches() (+5 more)
-
 ### Community 120 - "cache_memory/test_security_adversarial.py"
-Cohesion: 0.26
+Cohesion: 0.36
 Nodes (12): make_key(), make_scope(), test_anonymous_revocation_isolated_to_one_session_and_fails_closed(), test_broad_scope_cannot_replay_after_a_narrow_document_change(), test_cache_key_excludes_queries_model_inputs_and_conversation_identifiers(), test_changed_document_version_cannot_repopulate_an_old_cache_entry(), test_cross_principal_cache_read_is_a_fail_closed_miss(), test_cross_scope_conversation_read_cannot_be_recovered_by_matching_id() (+4 more)
 
 ### Community 121 - "App.test.tsx"
-Cohesion: 0.29
-Nodes (4): adminPrincipal, conversationResponse(), json(), principal
+Cohesion: 0.20
+Nodes (7): clearAccessToken(), signOut(), handleSignOut(), adminPrincipal, conversationResponse(), json(), principal
 
 ### Community 122 - "cache_memory/test_contract_integration.py"
 Cohesion: 0.36
@@ -574,51 +563,55 @@ Cohesion: 0.18
 Nodes (16): Backend, call(), Clock, gateway(), Policy, principal(), Resolvers, test_chunk_read_contract_accepts_only_chunk_id_shape() (+8 more)
 
 ### Community 125 - "test_customer_api_e2e.py"
-Cohesion: 0.10
-Nodes (14): test_healthz_is_local_liveness_only(), test_identity_requires_bearer_credentials(), test_vercel_origin_can_use_cookie_authenticated_api(), anonymous_conversation(), parse_sse(), request(), stream_public_question(), test_access_request_idempotency_returns_the_original_request() (+6 more)
+Cohesion: 0.07
+Nodes (16): _durable_access_request_store(), get_settings(), Settings, healthz(), test_settings_accept_platform_database_url(), anonymous_conversation(), parse_sse(), request() (+8 more)
+
+### Community 126 - "KnowledgeOperationalTests"
+Cohesion: 0.17
+Nodes (3): read(), task(), KnowledgeOperationalTests
 
 ### Community 127 - "admin_api/test_contract_integration.py"
 Cohesion: 0.16
 Nodes (12): clean_state(), test_account_response_does_not_return_password(), test_approval_schema_requires_explicit_stage(), test_job_status_contains_redacted_progress_only(), test_mutating_post_requires_idempotency_key(), test_upload_accepts_docx_mime_inference(), test_upload_accepts_xlsx_mime_inference(), test_upload_idempotency_rejects_a_different_fingerprint() (+4 more)
+
+### Community 129 - "ChunkMetadata"
+Cohesion: 0.07
+Nodes (30): ChunkMetadata, DocumentMetadata, DocumentVersionMetadata, _ImmutableModel, SourceSpan, to_qdrant_payload(), test_active_chunk_requires_acl_metadata(), test_chunk_accepts_source_provenance() (+22 more)
 
 ### Community 130 - "manifest.json"
 Cohesion: 0.15
 Nodes (12): corpus_id, documents, provenance, external_sources, kind, owner, source, queries (+4 more)
 
 ### Community 131 - "main.py"
-Cohesion: 0.19
-Nodes (10): _bearer_token(), current_identity(), _record(), _record_identity_error(), _request_context(), sign_in(), sign_out(), SignInRequest (+2 more)
+Cohesion: 0.16
+Nodes (13): create_access_request(), _bearer_token(), _clear_session_cookie(), current_identity(), _record(), _record_identity_error(), _request_context(), _set_session_cookie() (+5 more)
 
 ### Community 132 - "orchestration_langgraph/test_behavior_component.py"
-Cohesion: 0.23
-Nodes (16): AnswerDraft, Answerer, Clock, evidence(), request(), run(), test_compiles_a_state_graph_with_expected_nodes(), test_complex_loop_caps_subqueries_and_tool_calls_at_four() (+8 more)
+Cohesion: 0.25
+Nodes (15): Answerer, Clock, evidence(), request(), run(), test_compiles_a_state_graph_with_expected_nodes(), test_complex_loop_caps_subqueries_and_tool_calls_at_four(), test_complex_query_splits_into_distinct_subqueries() (+7 more)
 
-### Community 133 - "test_chat_stream.py"
-Cohesion: 0.41
-Nodes (9): anonymous_conversation(), parse_sse(), request(), test_configured_provider_error_never_falls_back_to_local_answer(), test_local_fallback_streams_incrementally_and_cancels_before_completion(), test_local_sample_citation_preview_returns_safe_metadata_after_fresh_authz(), test_new_conversation_recovers_from_a_stale_anonymous_session(), test_no_key_stream_runs_local_rag_and_persists_answer() (+1 more)
+### Community 133 - "test_sample_documents.py"
+Cohesion: 0.06
+Nodes (34): RerankerRequest, route(), ProviderPolicy, DeterministicEmbeddingAdapter, DeterministicRerankerAdapter, reciprocal_rank_fusion(), _tokens(), _gateway() (+26 more)
 
 ### Community 134 - "ConversationMessage"
-Cohesion: 0.14
+Cohesion: 0.13
 Nodes (18): ConversationMemory, ConversationMessage, test_contract_fake_repository_implements_provider_neutral_memory_boundary(), Clock, FakeInvalidationBus, FakeMemoryRepository, make_key(), make_scope() (+10 more)
 
 ### Community 135 - "ingestion/test_security_adversarial.py"
-Cohesion: 0.08
-Nodes (16): Clock, graph_labels(), read(), run_graph_query(), RuntimeFailureOnRemove, service_with_index(), task(), test_task_and_handoff_keep_ingestion_provider_neutral() (+8 more)
+Cohesion: 0.16
+Nodes (10): RuntimeFailureOnRemove, service_with_index(), test_cleanup_backend_error_is_wrapped_without_secret_leakage(), test_cross_tenant_document_lookup_is_denied(), test_cross_tenant_job_lookup_is_denied(), test_cross_tenant_version_lookup_is_denied(), test_derived_staging_state_cannot_authorize_retrieval(), test_legal_hold_blocks_permanent_delete() (+2 more)
 
-### Community 136 - "ChunkMetadata"
+### Community 136 - "AuthorizationDecision"
 Cohesion: 0.11
-Nodes (19): _acl_digest(), _chunk_digest(), DerivedIndexRecord, IndexPublicationStatus, JobStage, JobState, MaintenanceStatus, ProcessingStatus (+11 more)
-
-### Community 137 - "inherit_acl"
-Cohesion: 0.37
-Nodes (13): inherit_acl(), make_child(), make_parent(), test_conflicting_child_acl_is_denied(), test_document_mismatch_is_denied(), test_matching_child_acl_is_preserved(), test_missing_child_acl_is_inherited(), test_qdrant_projection_does_not_claim_authority() (+5 more)
+Nodes (21): AuthorizationDecision, revoked(), current_v2(), _CapturingModel, _Model, test_direct_answer_context_includes_authorized_parent_runtime(), authorize(), test_real_hybrid_path_propagates_pdf_schema_end_to_end() (+13 more)
 
 ### Community 138 - "ndcg_at_k"
 Cohesion: 0.15
-Nodes (16): answer_correctness(), citation_accuracy(), evaluate_case(), mean_reciprocal_rank(), ndcg_at_k(), no_answer_accuracy(), recall_at_k(), source_key() (+8 more)
+Nodes (15): answer_correctness(), citation_accuracy(), evaluate_case(), mean_reciprocal_rank(), ndcg_at_k(), no_answer_accuracy(), recall_at_k(), source_key() (+7 more)
 
 ### Community 140 - "ChatService"
-Cohesion: 0.25
+Cohesion: 0.22
 Nodes (5): ChatActor, ChatService, ConversationRecord, _error(), _fingerprint()
 
 ### Community 141 - "test_cache_memory.py"
@@ -626,64 +619,52 @@ Cohesion: 0.28
 Nodes (12): Clock, response_key(), scope(), test_cache_delete_is_explicit(), test_cache_expires_and_rejects_unbounded_ttl_or_value(), test_cache_key_contains_security_scope_but_not_raw_query(), test_cache_requires_exact_current_scope_and_isolates_tenant_and_principal(), test_conversation_delete_removes_body_and_blocks_recreation_in_old_scope() (+4 more)
 
 ### Community 142 - "DocumentsView"
-Cohesion: 0.70
-Nodes (5): getDocuments(), uploadMetadataDocument(), DocumentsView(), load(), upload()
-
-### Community 144 - "tests/test_dashboard_api.py"
-Cohesion: 0.25
-Nodes (6): clean_state(), test_anonymous_is_denied_dashboard_and_feedback(), test_feedback_review_is_private_bounded_and_replay_does_not_duplicate(), test_management_roles_can_read_empty_dashboard_and_feedback(), test_non_management_roles_are_denied_dashboard_and_feedback(), test_policy_outage_fails_closed_for_both_management_reads()
+Cohesion: 0.31
+Nodes (10): getAuditEvents(), getDocuments(), getFeedback(), uploadMetadataDocument(), AuditView(), load(), DataViewEmpty(), DocumentsView() (+2 more)
 
 ### Community 145 - "read"
-Cohesion: 0.05
-Nodes (7): read(), task(), tasks(), IdentityBehaviorTests, IdentityContractTests, IdentityOperationalTests, IdentitySecurityTests
+Cohesion: 0.18
+Nodes (4): read(), task(), tasks(), IdentityOperationalTests
 
 ### Community 146 - "build_secure_context"
 Cohesion: 0.16
 Nodes (5): build_secure_context(), RetrievedEvidence, PromptOperationalTests, PromptSecurityAdversarialTests, test_secure_context_escapes_parent_prompt_injection_as_untrusted_content()
 
+### Community 148 - "rag_v4_citation/test_e2e_operational.py"
+Cohesion: 0.11
+Nodes (20): DOCXLocator, XLSXLocator, test_malformed_locator_model_is_rejected(), _locator(), _allow(), _answer(), _locator(), _Model (+12 more)
+
 ### Community 150 - "observability/context.py"
-Cohesion: 0.36
-Nodes (4): _header(), _new_traceparent(), _valid_traceparent(), test_correlation_context_preserves_valid_headers_and_creates_child()
+Cohesion: 0.19
+Nodes (5): identity_error_handler(), _header(), _new_traceparent(), _valid_traceparent(), test_correlation_context_preserves_valid_headers_and_creates_child()
 
 ### Community 151 - "app/evidence/__init__.py"
-Cohesion: 0.15
-Nodes (11): CitationRecord, ClaimVerification, _is_negative(), _numeric_conflict(), _numeric_terms(), _relation(), _terms(), VerificationOutcome (+3 more)
+Cohesion: 0.13
+Nodes (15): CitationRecord, _is_negative(), _numeric_conflict(), _numeric_terms(), _relation(), _terms(), VerificationOutcome, _answer_citation() (+7 more)
 
 ### Community 152 - "InMemoryScopedCache"
 Cohesion: 0.20
-Nodes (15): InMemoryScopedCache, test_cache_invalidation_hooks_remove_only_matching_scope(), Clock, make_key(), make_scope(), test_broad_acl_invalidation_removes_all_versions_in_one_tenant(), test_cache_expires_at_the_exact_ttl_deadline(), test_cache_rejects_invalid_ttl_and_oversize_values() (+7 more)
+Nodes (14): InMemoryScopedCache, test_cache_invalidation_hooks_remove_only_matching_scope(), Clock, make_key(), make_scope(), test_broad_acl_invalidation_removes_all_versions_in_one_tenant(), test_cache_expires_at_the_exact_ttl_deadline(), test_cache_rejects_invalid_ttl_and_oversize_values() (+6 more)
 
 ### Community 153 - "ingestion/test_behavior_component.py"
-Cohesion: 0.25
-Nodes (6): test_empty_processing_input_is_rejected(), test_new_active_version_supersedes_previous_version(), test_publish_activates_authoritative_version_and_chunks(), test_review_one_requires_clean_scan(), test_staging_is_not_retrievable_before_ack_and_publish(), test_upload_is_quarantined_and_invisible()
-
-### Community 154 - "test_rag_002_metrics.py"
-Cohesion: 1.00
-Nodes (3): _span(), _spans(), test_rag_002_regression_metrics_on_tiny_in_memory_corpus()
+Cohesion: 0.22
+Nodes (6): test_empty_processing_input_is_rejected(), test_malware_scan_is_terminal(), test_new_active_version_supersedes_previous_version(), test_publish_activates_authoritative_version_and_chunks(), test_review_one_requires_clean_scan(), test_staging_is_not_retrievable_before_ack_and_publish()
 
 ### Community 156 - "db/runtime.py"
-Cohesion: 0.09
-Nodes (18): _payload(), PostgresAccessRequestStore, _utc_z(), _answer_status(), _as_utc(), _membership_uuid(), normalize_database_url(), _parse_uuid() (+10 more)
-
-### Community 157 - "DocumentMetadata"
-Cohesion: 0.29
-Nodes (3): DocumentMetadata, test_document_metadata_is_tenant_scoped(), test_document_metadata_contract_fields()
-
-### Community 158 - "to_qdrant_payload"
-Cohesion: 0.39
-Nodes (10): to_qdrant_payload(), make_child(), make_parent(), test_acl_inheritance_populates_child_reference(), test_parent_child_contract_keeps_same_scope(), test_qdrant_projection_contains_index_state(), test_qdrant_projection_contains_scope_keys(), test_qdrant_projection_does_not_store_chunk_text() (+2 more)
+Cohesion: 0.13
+Nodes (11): JobCheckpoint, MessageRecord, PostgresAccessRequestStore, _utc_z(), _as_utc(), _jsonb(), _parse_uuid(), PostgresAuditSink (+3 more)
 
 ### Community 159 - "UUID"
-Cohesion: 0.15
-Nodes (8): DocumentRecord, IngestionError, IngestionJob, InvalidTransition, MaintenanceBlocked, MaintenanceWindow, NotFound, RetentionBlocked
-
-### Community 160 - "ApprovalsView"
-Cohesion: 0.70
-Nodes (5): getApprovals(), reviewDocumentVersion(), ApprovalsView(), approve(), load()
+Cohesion: 0.10
+Nodes (18): ApprovalBlocked, ApprovalRecord, DocumentRecord, IdempotencyConflict, IndexPublication, IngestionError, IngestionJob, InvalidInput (+10 more)
 
 ### Community 161 - "App"
-Cohesion: 0.12
-Nodes (29): clearAccessToken(), createConversation(), getConversation(), previewCitation(), signOut(), submitFeedback(), App(), closeAuth() (+21 more)
+Cohesion: 0.09
+Nodes (37): createConversation(), getConversation(), previewCitation(), submitFeedback(), AdminGuardView(), App(), closeAuth(), completeAuthentication() (+29 more)
+
+### Community 162 - "pathlib"
+Cohesion: 0.17
+Nodes (4): dfs(), load_frontend_json(), read(), FrontendContractIntegrationTests
 
 ### Community 164 - "package.json"
 Cohesion: 0.38
@@ -694,44 +675,44 @@ Cohesion: 0.19
 Nodes (4): calls(), function(), literal(), BackendBootstrapBehaviorTests
 
 ### Community 171 - "test_access_request_review.py"
-Cohesion: 0.23
-Nodes (9): clean_state(), create_request(), test_anonymous_request_uses_server_configured_tenant(), test_approve_is_idempotent_and_does_not_grant_access(), test_manager_cannot_list_or_review_another_tenant_request(), test_manager_lists_same_tenant_pending_requests_as_safe_metadata_only(), test_only_managers_can_review_access_requests(), test_review_rejects_key_reuse_and_conflicting_decision() (+1 more)
+Cohesion: 0.21
+Nodes (10): clean_state(), create_request(), test_anonymous_request_uses_server_configured_tenant(), test_approve_is_idempotent_and_does_not_grant_access(), test_http_only_session_cookie_restores_identity_after_reload(), test_manager_cannot_list_or_review_another_tenant_request(), test_manager_lists_same_tenant_pending_requests_as_safe_metadata_only(), test_only_managers_can_review_access_requests() (+2 more)
 
 ### Community 183 - "authorization/test_e2e_operational.py"
-Cohesion: 0.33
+Cohesion: 0.32
 Nodes (4): AuthorizationOperationalTests, document(), evaluator(), principal()
 
 ### Community 186 - "test_customer_frontend_static.py"
 Cohesion: 0.15
 Nodes (6): test_chat_controls_have_keyboard_labels_and_live_status_semantics(), test_mobile_375x812_contract_keeps_chat_controls_within_the_viewport(), test_reload_contract_restores_conversation_and_requests_history(), test_responsive_layout_has_mobile_breakpoints_and_no_horizontal_body_overflow(), test_retryable_backend_error_has_a_user_recovery_action(), test_stop_control_is_available_only_during_a_live_stream()
 
-### Community 197 - "pytest"
-Cohesion: 0.13
-Nodes (31): IndexManifest, UploadManifest, make_chunks(), make_manifest(), validated(), test_doc_is_rejected(), test_internal_upload_requires_department(), test_manifest_checksum_mismatch_blocks_staging() (+23 more)
+### Community 197 - "make_manifest"
+Cohesion: 0.15
+Nodes (24): UploadManifest, make_chunks(), validated(), test_clean_review_one_allows_processing(), test_processing_inherits_parent_acl(), test_approval_expiry_blocks_publication(), test_doc_is_rejected(), test_internal_upload_requires_department() (+16 more)
 
 ### Community 201 - "json"
-Cohesion: 0.16
-Nodes (4): load_records(), test_dashboard_has_api_and_security_panels(), test_dashboard_is_valid_json(), test_rag002_task_registry_keeps_retrieval_validation_and_scope()
+Cohesion: 0.18
+Nodes (3): test_dashboard_has_api_and_security_panels(), test_dashboard_is_valid_json(), test_rag002_task_registry_keeps_retrieval_validation_and_scope()
 
 ## Knowledge Gaps
 - **1 isolated node(s):** `enterprise-agentic-rag-backend`
   These have ≤1 connection - possible missing edges. (Counts symbols only; 1034 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **55 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **57 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `AuthenticatedPrincipal` connect `AuthenticatedPrincipal` to `main.py`, `test_chat_stream.py`, `ChunkMetadata`, `ChatService`, `core/chat.py`, `AuthorizationContractIntegrationTests`, `api/chat.py`, `_make_retriever`, `AuthorizationEvaluator`, `chat_api/test_contract_integration.py`, `InMemoryIdentityStore`, `chat_api/test_behavior_component.py`, `chat_api/test_security_adversarial.py`, `DataClassification`, `hashlib`, `dense.py`, `ToolResult`, `eval_001_runner.py`, `authorization/test_e2e_operational.py`, `_resolve`, `orchestration_langgraph/test_security_adversarial.py`, `test_authorization.py`, `rag/runtime.py`, `evaluator`, `test_tool_gateway.py`, `IngestionService`, `evaluator`, `orchestration_langgraph/test_contract_integration.py`, `test_customer_api_e2e.py`?**
-  _High betweenness centrality (0.062) - this node is a cross-community bridge._
+- **Why does `AuthenticatedPrincipal` connect `AuthenticatedPrincipal` to `main.py`, `test_sample_documents.py`, `ChatService`, `core/chat.py`, `rag_v4_citation/test_e2e_operational.py`, `AuthorizationContractIntegrationTests`, `app/evidence/__init__.py`, `api/chat.py`, `_make_retriever`, `AuthorizationEvaluator`, `chat_api/test_contract_integration.py`, `admin.py`, `chat_api/test_behavior_component.py`, `chat_api/test_security_adversarial.py`, `hybrid.py`, `IdentityRecord`, `ToolResult`, `gemini.py`, `expand_parent_context`, `authorization/test_behavior_component.py`, `authorization/test_e2e_operational.py`, `AuthenticatedPrincipal`, `_resolve`, `answer_baseline/test_behavior_component.py`, `orchestration_langgraph/test_security_adversarial.py`, `test_authorization.py`, `rag/runtime.py`, `evaluator`, `test_tool_gateway.py`, `eval_001_runner.py`, `IngestionService`, `orchestration_langgraph/test_contract_integration.py`, `test_customer_api_e2e.py`?**
+  _High betweenness centrality (0.054) - this node is a cross-community bridge._
 - **Are the 88 inferred relationships involving `DataClassification` (e.g. with `_require_manager()` and `UploadRequest`) actually correct?**
   _`DataClassification` has 88 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `enterprise-agentic-rag-backend` to the rest of the system?**
   _1 weakly-connected nodes found - possible missing edges._
 - **Should `audit.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.10512820512820513 - nodes in this community are weakly interconnected._
-- **Why does `IngestionService` connect `IngestionService` to `DocumentVersionMetadata`, `audit.py`, `main.py`, `pytest`, `DataClassification`, `InMemoryDerivedIndex`, `ChunkMetadata`, `ingestion/test_security_adversarial.py`, `dense.py`, `new_service`, `reset`, `eval_001_runner.py`, `answer_baseline/test_security_adversarial.py`, `lifecycle.py`, `_make_retriever`, `rag/runtime.py`, `UUID`?**
-  _High betweenness centrality (0.033) - this node is a cross-community bridge._
+  _Cohesion score 0.10241820768136557 - nodes in this community are weakly interconnected._
+- **Why does `DataClassification` connect `ModelGateway` to `test_sample_documents.py`, `InMemoryDerivedIndex`, `AuthorizationDecision`, `answer_baseline/test_security_adversarial.py`, `rag_v4_citation/test_e2e_operational.py`, `app/evidence/__init__.py`, `model/test_e2e_operational.py`, `_make_retriever`, `.__init__`, `admin.py`, `UUID`, `make_manifest`, `hybrid.py`, `AuthenticatedPrincipal`, `gemini.py`, `expand_parent_context`, `AuthenticatedPrincipal`, `_resolve`, `make_manifest`, `answer_baseline/test_behavior_component.py`, `model/test_contract_integration.py`, `rag/runtime.py`, `test_answer_baseline.py`, `eval_001_runner.py`, `IngestionService`, `EgressMode`, `answer_baseline/test_contract_integration.py`, `answer_baseline/test_e2e_operational.py`?**
+  _High betweenness centrality (0.041) - this node is a cross-community bridge._
 - **Are the 55 inferred relationships involving `IngestionService` (e.g. with `reset_state()` and `ChunkMetadata`) actually correct?**
   _`IngestionService` has 55 INFERRED edges - model-reasoned connections that need verification._
 - **Should `compose` be split into smaller, more focused modules?**
-  _Cohesion score 0.06838106370543542 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07017543859649122 - nodes in this community are weakly interconnected._

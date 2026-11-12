@@ -18,7 +18,7 @@ It is a handoff for Agent 2. It is not an approval to invent API behavior, permi
 
 The existing visual references in `docs/design/UI:UX reference/` already establish the Enterprise Knowledge AI direction: Inter typography, light surfaces, thin borders, controlled corporate red, compact enterprise tables and a 260px desktop navigation rail. This redesign keeps that usable foundation and makes the product feel more polished, more focused and more honest about unavailable backend capabilities.
 
-The current frontend is a single React shell in `frontend/src/App.tsx` with an in-memory bearer token, a backend-backed conversation history drawer, chat SSE, citation preview, and administration views. Registration/access-request screens are wired to their pending contract; Google OAuth is still unavailable.
+The current frontend is a single React shell in `frontend/src/App.tsx` with a short-lived in-memory bearer token plus a backend HttpOnly session-cookie fallback, a backend-backed conversation history drawer, chat SSE, citation preview, and administration views. Registration/access-request screens are wired to their pending contract; Google OAuth is still unavailable.
 
 ### Scope lock
 
@@ -333,7 +333,7 @@ POST /api/v1/auth/sign-in
 
 The form must provide email, password, optional MFA only when requested/needed, submit loading, invalid credentials, MFA-required, account inactive, backend unavailable and rate-limit states. Do not display roles from client input; render roles only from `principal` returned by the server.
 
-Current `GET /api/v1/auth/me` and `POST /api/v1/auth/sign-out` are available. The current frontend keeps the bearer token in memory, so a browser reload cannot restore an authenticated identity without a future secure session/refresh contract. The design must show a clear “session expired — sign in again” state rather than silently claiming the user is still signed in.
+Current `GET /api/v1/auth/me` and `POST /api/v1/auth/sign-out` are available. The backend sets an HttpOnly session cookie and the frontend sends credentialed requests, so a reload can restore identity when the configured backend identity store is available; the in-memory bearer remains a short-lived compatibility path. If the session is invalid, show a clear “session expired — sign in again” state.
 
 ### 6.3 Google sign-in
 
@@ -491,7 +491,7 @@ Base URL is `/api/v1`. “Existing” means the current backend route was found 
 | Conversation list/search | `GET /conversations?limit&offset&search` | Paged items with title and timestamps | Existing; FE history drawer reads metadata |
 | Conversation rename/archive/delete | None | No approved payload | Backend gap; hide actions |
 | Sign in | `POST /auth/sign-in` | Accepts email/password/optional MFA; returns bearer + principal | Existing; FE wired |
-| Current identity | `GET /auth/me` | Returns server principal | Existing; memory-token reload limitation |
+| Current identity | `GET /auth/me` | Returns server principal | Existing; HttpOnly cookie restore plus memory bearer fallback |
 | Sign out | `POST /auth/sign-out` | 204 | Existing; FE wired |
 | Google sign-in | None | No OAuth initiation/callback/session | Backend gap and not approved MVP; disabled state |
 | Registration/access request | `POST /access-requests` | Records a pending request with idempotency; it never grants access | Backend wired; manager review is wired; durable provisioning and email confirmation remain unavailable |
@@ -523,9 +523,9 @@ Base URL is `/api/v1`. “Existing” means the current backend route was found 
 
 Priority order for a real production chat product:
 
-1. **Durable authenticated session / refresh:** the current FE memory token is lost on reload; `GET /auth/me` cannot restore identity by itself.
+1. **Configured durable authenticated session:** the HttpOnly cookie path is implemented; the in-memory fallback remains only for local/demo mode when PostgreSQL is not configured.
 2. **Employee onboarding completion:** request recording, Postgres persistence and manager review now exist when the database is configured; identity provisioning, email invitation, activation token, password set/reset and verification remain to be implemented.
-3. **Conversation search/grouping and URL restore:** the basic history drawer exists, while search, grouping and deep-link semantics remain a UX enhancement.
+3. **Conversation URL restore:** history search and load-more now exist; grouping and deep-link semantics remain a UX enhancement.
 4. **Google OAuth decision and implementation:** only if the Project Owner changes the current MVP decision.
 5. **Binary document upload/object-storage contract:** align docs and implementation before exposing a real file picker.
 6. **Admin mutation schemas in frontend contract:** exact form validation, response envelopes, conflict errors and optimistic-lock behavior.
