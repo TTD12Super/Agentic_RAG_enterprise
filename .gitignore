@@ -16,6 +16,7 @@ coverage/
 .DS_Store
 *.sqlite3
 *.db
+*.egg-info/
 *.pem
 *.key
 /data/private/
