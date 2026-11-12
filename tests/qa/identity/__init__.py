@@ -1,1 +1,1 @@
-"""Four-family QA package for IDENT-001."""
+"""Identity QA package."""

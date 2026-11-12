@@ -7,7 +7,7 @@ repository is configured.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone
 from enum import StrEnum
@@ -85,6 +85,18 @@ def _fingerprint(value: object) -> str:
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
+def _citation_expired(artifact: CitationArtifact, *, now: datetime) -> bool:
+    raw = artifact.citation.expires_at if isinstance(artifact.citation, AnswerCitation) else artifact.citation.get("expires_at")
+    if raw is None:
+        return False
+    if isinstance(raw, str):
+        try:
+            raw = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            return True
+    return not isinstance(raw, datetime) or raw.tzinfo is None or raw <= now
+
+
 def _error(
     code: str,
     message: str,
@@ -120,6 +132,10 @@ class MessageRecord:
     message_id: str
     role: str
     created_at: datetime
+    answer_id: str | None = None
+    status: str | None = None
+    citations: tuple[Mapping[str, Any], ...] = ()
+    reason_codes: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -137,6 +153,17 @@ class ConversationRecord:
 class ConversationView:
     record: ConversationRecord
     messages: tuple[tuple[MessageRecord, ConversationMessage], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ConversationSummary:
+    """Metadata-only history row; message bodies never cross this boundary."""
+
+    conversation_id: str
+    title: str
+    created_at: datetime
+    updated_at: datetime
+    message_count: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -197,6 +224,11 @@ class CitationArtifact:
     version_status: str = "ACTIVE"
     current_version_id: str | None = None
     acl: tuple[Any, ...] = ()
+    title: str | None = None
+    filename: str | None = None
+    mime_type: str | None = None
+    location: Mapping[str, object] | None = None
+    owner_department_id: str | None = None
 
     @property
     def citation_id(self) -> str:
@@ -224,11 +256,18 @@ class CitationArtifact:
         return str(self.citation.get("version_id", ""))
 
     def as_dict(self) -> dict[str, Any]:
-        return (
+        payload = (
             self.citation.to_dict()
             if isinstance(self.citation, AnswerCitation)
             else dict(self.citation)
         )
+        for name in ("title", "filename", "mime_type"):
+            value = getattr(self, name)
+            if value is not None:
+                payload.setdefault(name, value)
+        if self.location is not None:
+            payload.setdefault("location", dict(self.location))
+        return payload
 
 
 class ConversationRepository(Protocol):
@@ -250,6 +289,15 @@ class ConversationRepository(Protocol):
     ) -> ConversationRecord: ...
 
     def get_conversation(self, conversation_id: str, *, current_scope: CacheScope) -> ConversationView | None: ...
+
+    def list_conversations(
+        self,
+        *,
+        current_scope: CacheScope,
+        limit: int,
+        offset: int,
+        search: str | None,
+    ) -> tuple[tuple[ConversationSummary, ...], int]: ...
 
     def append_message(
         self,
@@ -289,6 +337,8 @@ class QueryJobRepository(Protocol):
 
     def fail_job(self, job_id: str, *, scope: CacheScope, error_code: str) -> QueryJob: ...
 
+    def cancel_job(self, job_id: str, *, scope: CacheScope, error_code: str) -> QueryJob: ...
+
 
 class CheckpointRepository(Protocol):
     def save_checkpoint(self, job_id: str, *, scope: CacheScope, checkpoint: JobCheckpoint) -> QueryJob: ...
@@ -317,8 +367,15 @@ class DurableChatRepository(ConversationRepository, QueryJobRepository, Checkpoi
 class InMemoryChatRepository:
     """Bounded local adapter used only when no durable DB adapter is configured."""
 
-    def __init__(self, *, max_conversations: int = 10_000, max_jobs: int = 10_000) -> None:
+    def __init__(
+        self,
+        *,
+        max_conversations: int = 10_000,
+        max_jobs: int = 10_000,
+        clock: Callable[[], datetime] = _now,
+    ) -> None:
         self.memory = InMemoryConversationMemory()
+        self._clock = clock
         self.max_conversations = max_conversations
         self.max_jobs = max_jobs
         self._sessions: dict[str, AnonymousSession] = {}
@@ -328,6 +385,12 @@ class InMemoryChatRepository:
         self._submissions: dict[tuple[str, str, str, str], tuple[str, str]] = {}
         self._citations: dict[tuple[str, str], CitationArtifact] = {}
         self._lock = RLock()
+
+    def set_clock(self, clock: Callable[[], datetime]) -> None:
+        """Keep the bounded adapter's expiry checks on the service clock."""
+
+        self._clock = clock
+        self.memory.set_clock(clock)
 
     def create_anonymous_session(self, tenant_id: str, *, now: datetime) -> tuple[str, AnonymousSession]:
         token = secrets.token_urlsafe(32)
@@ -388,7 +451,7 @@ class InMemoryChatRepository:
             record = self._conversations.get(conversation_id)
             if record is None or record.scope != current_scope:
                 return None
-            if current_scope.principal_id.startswith("anonymous:") and _now() >= record.expires_at:
+            if current_scope.principal_id.startswith("anonymous:") and self._clock() >= record.expires_at:
                 return None
             memory = self.memory.read(current_scope, conversation_id, current_scope=current_scope)
             body = memory.messages if memory is not None else ()
@@ -396,6 +459,49 @@ class InMemoryChatRepository:
             if len(meta) != len(body):
                 return None
             return ConversationView(record, tuple(zip(meta, body)))
+
+    def list_conversations(
+        self,
+        *,
+        current_scope: CacheScope,
+        limit: int,
+        offset: int,
+        search: str | None,
+    ) -> tuple[tuple[ConversationSummary, ...], int]:
+        normalized_search = search.casefold().strip() if search else ""
+        matches: list[ConversationSummary] = []
+        with self._lock:
+            for record in self._conversations.values():
+                if record.scope != current_scope:
+                    continue
+                if current_scope.principal_id.startswith("anonymous:") and self._clock() >= record.expires_at:
+                    continue
+                view = self.get_conversation(record.conversation_id, current_scope=current_scope)
+                if view is None:
+                    continue
+                user_message = next(
+                    (message.content.strip() for _, message in view.messages if message.role == "user"),
+                    "",
+                )
+                title = user_message[:96] or "New conversation"
+                if normalized_search and normalized_search not in title.casefold():
+                    continue
+                updated_at = max(
+                    (meta.created_at for meta, _ in view.messages),
+                    default=record.created_at,
+                )
+                matches.append(
+                    ConversationSummary(
+                        conversation_id=record.conversation_id,
+                        title=title,
+                        created_at=record.created_at,
+                        updated_at=updated_at,
+                        message_count=len(view.messages),
+                    )
+                )
+        matches.sort(key=lambda item: (item.updated_at, item.conversation_id), reverse=True)
+        total = len(matches)
+        return tuple(matches[offset : offset + limit]), total
 
     def append_message(
         self,
@@ -515,7 +621,15 @@ class InMemoryChatRepository:
                 ConversationMessage("assistant", completion.answer or "Insufficient evidence to answer this question."),
             )
             self._message_meta[job.conversation_id].append(
-                MessageRecord(response_id, "assistant", _now())
+                MessageRecord(
+                    response_id,
+                    "assistant",
+                    _now(),
+                    answer_id=response_id,
+                    status=completion.status.value,
+                    citations=completion.citations,
+                    reason_codes=completion.reason_codes,
+                )
             )
             completed = replace(
                 job,
@@ -541,6 +655,22 @@ class InMemoryChatRepository:
             failed = replace(job, state=JobState.FAILED, revision=job.revision + 1, error_code=error_code)
             self._jobs[job_id] = failed
             return failed
+
+    def cancel_job(self, job_id: str, *, scope: CacheScope, error_code: str) -> QueryJob:
+        with self._lock:
+            job = self.get_job(job_id, current_scope=scope)
+            if job is None:
+                raise StaleScopeError("job scope is stale")
+            if job.state in {JobState.COMPLETED, JobState.FAILED, JobState.CANCELLED}:
+                return job
+            cancelled = replace(
+                job,
+                state=JobState.CANCELLED,
+                revision=job.revision + 1,
+                error_code=error_code,
+            )
+            self._jobs[job_id] = cancelled
+            return cancelled
 
     def remember_submission(
         self, *, tenant_id: str, owner_id: str, conversation_id: str, key: str, fingerprint: str, job_id: str
@@ -609,7 +739,7 @@ class ChatService:
         tenant_id: str = DEFAULT_PUBLIC_TENANT,
         clock: Callable[[], datetime] = _now,
         maintenance_probe: Callable[[str], str | None] | None = None,
-        document_state_provider: Callable[[CitationArtifact], CitationArtifact] | None = None,
+        document_state_provider: Callable[[CitationArtifact], CitationArtifact | None] | None = None,
     ) -> None:
         self.repository = repository or InMemoryChatRepository()
         self.executor = executor or NoopQueryExecutor()
@@ -617,6 +747,9 @@ class ChatService:
         self.pep = pep or PolicyEnforcementPoint(self._evaluator())
         self.tenant_id = tenant_id
         self.clock = clock
+        set_clock = getattr(self.repository, "set_clock", None)
+        if callable(set_clock):
+            set_clock(clock)
         self.maintenance_probe = maintenance_probe or (lambda tenant: None)
         self.document_state_provider = document_state_provider or (lambda artifact: artifact)
         self.auto_process = True
@@ -652,9 +785,12 @@ class ChatService:
             )
         if token:
             session = self.repository.resolve_anonymous_session(token, self.tenant_id, now=now)
-            if session is None:
-                raise _error("AUTH_INVALID", "Invalid anonymous session.", status=401)
-            return self._anonymous_actor(session, token), False
+            if session is not None:
+                return self._anonymous_actor(session, token), False
+            # Creating a new conversation cannot expose an old conversation; recover
+            # from an expired in-memory demo cookie while existing-resource reads remain deny-by-default.
+            raw, session = self.repository.create_anonymous_session(self.tenant_id, now=now)
+            return self._anonymous_actor(session, raw), True
         raw, session = self.repository.create_anonymous_session(self.tenant_id, now=now)
         return self._anonymous_actor(session, raw), True
 
@@ -724,6 +860,46 @@ class ChatService:
             raise _error("NOT_FOUND_OR_FORBIDDEN", "The requested resource is unavailable.", status=404)
         self._authorize_conversation(actor, view.record)
         return view
+
+    def list_conversations(
+        self,
+        actor: ChatActor,
+        *,
+        limit: int,
+        offset: int,
+        search: str | None,
+    ) -> tuple[tuple[ConversationSummary, ...], int]:
+        rows, total = self.repository.list_conversations(
+            current_scope=actor.scope,
+            limit=limit,
+            offset=offset,
+            search=search,
+        )
+        if actor.kind is ActorKind.ANONYMOUS:
+            return rows, total
+
+        # The repository scopes by owner, while the PDP still owns the final
+        # conversation-read decision. Denied rows are omitted without leaking
+        # their existence; policy outages remain errors from the PEP.
+        if not rows:
+            return rows, total
+        first = rows[0]
+        record = ConversationRecord(
+            conversation_id=first.conversation_id,
+            tenant_id=actor.tenant_id,
+            owner_kind=ActorKind.AUTHENTICATED,
+            owner_id=actor.actor_id,
+            scope=actor.scope,
+            created_at=first.created_at,
+            expires_at=first.updated_at,
+        )
+        try:
+            self._authorize_conversation(actor, record)
+        except IdentityError as error:
+            if error.code == "AUTH_UNAVAILABLE":
+                raise
+            return (), 0
+        return rows, total
 
     def submit(
         self,
@@ -855,6 +1031,143 @@ class ChatService:
             return self.repository.fail_job(job_id, scope=actor.scope, error_code=completion.reason_codes[0] if completion.reason_codes else "QUERY_FAILED")
         return self.repository.complete_job(job_id, scope=actor.scope, completion=completion)
 
+    def stream(
+        self,
+        actor: ChatActor,
+        job_id: str,
+        *,
+        should_cancel: Callable[[], bool] | None = None,
+    ) -> Iterator[tuple[str, dict[str, Any]]]:
+        """Run a queued job through an executor's streaming seam and persist it."""
+
+        job = self._job_for_actor(actor, job_id)
+        yield (
+            "message_start",
+            {"job_id": job.job_id, "conversation_id": job.conversation_id},
+        )
+        if job.state is JobState.COMPLETED:
+            yield ("done", job_payload(job))
+            return
+        if job.state in {JobState.FAILED, JobState.CANCELLED}:
+            yield ("error", {"code": job.error_code or "QUERY_FAILED"})
+            return
+        if self.maintenance_probe(actor.tenant_id):
+            yield ("error", {"code": "MAINTENANCE_ACTIVE"})
+            return
+        if self.clock() >= job.workflow_deadline_at:
+            failed = self.repository.fail_job(job_id, scope=actor.scope, error_code="TIMEOUT")
+            yield ("error", {"code": failed.error_code or "TIMEOUT"})
+            return
+
+        try:
+            running = self.repository.claim_job(job_id, scope=actor.scope, now=self.clock())
+            query = self.repository.request_query(running, scope=actor.scope)
+            if query is None:
+                failed = self.repository.fail_job(job_id, scope=actor.scope, error_code="REQUEST_UNAVAILABLE")
+                yield ("error", {"code": failed.error_code or "REQUEST_UNAVAILABLE"})
+                return
+            checkpoint = JobCheckpoint(
+                stage="RUNNING",
+                revision=running.revision,
+                attempt_id=running.attempt_id,
+                tenant_id=actor.tenant_id,
+                conversation_id=running.conversation_id,
+                policy_epoch=actor.scope.policy_epoch,
+                query_hash=_fingerprint(query),
+                workflow_deadline_at=running.workflow_deadline_at,
+            )
+            self.repository.save_checkpoint(job_id, scope=actor.scope, checkpoint=checkpoint)
+            request = OrchestrationRequest(
+                query=query,
+                principal_ref=actor.actor_id,
+                authorized_scope_ref=_fingerprint(actor.scope.key_prefix()),
+                job_id=running.job_id,
+                attempt_id=running.attempt_id,
+                traceparent="00-" + secrets.token_hex(16) + "-" + secrets.token_hex(8) + "-01",
+                deadline_at=running.workflow_deadline_at,
+            )
+            bind_context = getattr(self.executor, "bind_context", None)
+            if callable(bind_context):
+                bind_context(request.principal_ref, actor.principal, actor.scope.policy_epoch)
+            stream_executor = getattr(self.executor, "stream", None)
+            if not callable(stream_executor):
+                raise RuntimeError("streaming executor is unavailable")
+            completion: QueryCompletion | None = None
+            for raw in stream_executor(request):
+                if should_cancel is not None and should_cancel():
+                    self.repository.cancel_job(
+                        job_id, scope=actor.scope, error_code="CLIENT_DISCONNECTED"
+                    )
+                    return
+                if not isinstance(raw, Mapping):
+                    continue
+                event = str(raw.get("event", ""))
+                data = raw.get("data")
+                if not isinstance(data, Mapping):
+                    continue
+                if event in {"token", "citation"}:
+                    yield (event, dict(data))
+                elif event == "error":
+                    code = str(data.get("code", "QUERY_FAILED"))
+                    failed = self.repository.fail_job(job_id, scope=actor.scope, error_code=code)
+                    yield ("error", {"code": failed.error_code or "QUERY_FAILED"})
+                    return
+                elif event == "complete":
+                    if should_cancel is not None and should_cancel():
+                        self.repository.cancel_job(
+                            job_id, scope=actor.scope, error_code="CLIENT_DISCONNECTED"
+                        )
+                        return
+                    try:
+                        completion = QueryCompletion(
+                            AnswerState(str(data.get("status", "ERROR"))),
+                            str(data.get("answer", "")),
+                            tuple(item for item in data.get("citations", ()) if isinstance(item, Mapping)),
+                            tuple(str(item) for item in data.get("reason_codes", ())),
+                        )
+                    except (TypeError, ValueError):
+                        completion = QueryCompletion(AnswerState.ERROR, reason_codes=("INVALID_QUERY_RESULT",))
+            if completion is None:
+                failed = self.repository.fail_job(job_id, scope=actor.scope, error_code="QUERY_FAILED")
+                yield ("error", {"code": failed.error_code or "QUERY_FAILED"})
+                return
+            if completion.status is AnswerState.ERROR:
+                failed = self.repository.fail_job(
+                    job_id,
+                    scope=actor.scope,
+                    error_code=completion.reason_codes[0] if completion.reason_codes else "QUERY_FAILED",
+                )
+                yield ("error", {"code": failed.error_code or "QUERY_FAILED"})
+                return
+            if should_cancel is not None and should_cancel():
+                self.repository.cancel_job(
+                    job_id, scope=actor.scope, error_code="CLIENT_DISCONNECTED"
+                )
+                return
+            fresh_scope = self._scope(actor.tenant_id, actor.actor_id)
+            if fresh_scope != actor.scope:
+                failed = self.repository.fail_job(job_id, scope=actor.scope, error_code="SCOPE_STALE")
+                yield ("error", {"code": failed.error_code or "SCOPE_STALE"})
+                return
+            completed = self.repository.complete_job(job_id, scope=actor.scope, completion=completion)
+            yield ("done", job_payload(completed))
+        except TimeoutError:
+            failed = self.repository.fail_job(job_id, scope=actor.scope, error_code="TIMEOUT")
+            yield ("error", {"code": failed.error_code or "TIMEOUT"})
+        except Exception:
+            try:
+                failed = self.repository.fail_job(job_id, scope=actor.scope, error_code="QUERY_FAILED")
+                code = failed.error_code or "QUERY_FAILED"
+            except Exception:
+                code = "QUERY_FAILED"
+            yield ("error", {"code": code})
+
+    def cancel(self, actor: ChatActor, job_id: str, *, error_code: str = "CLIENT_DISCONNECTED") -> QueryJob:
+        """Cancel an in-flight stream without creating an assistant message."""
+
+        self._job_for_actor(actor, job_id)
+        return self.repository.cancel_job(job_id, scope=actor.scope, error_code=error_code)
+
     def pause_for_maintenance(self, tenant_id: str, window_id: str) -> tuple[QueryJob, ...]:
         paused: list[QueryJob] = []
         for job in self.repository.jobs_for_tenant(tenant_id, states={JobState.RUNNING}):
@@ -892,6 +1205,8 @@ class ChatService:
         if artifact is None:
             raise _error("NOT_FOUND_OR_FORBIDDEN", "The requested resource is unavailable.", status=404)
         artifact = self.document_state_provider(artifact)
+        if artifact is None or _citation_expired(artifact, now=self.clock()):
+            raise _error("NOT_FOUND_OR_FORBIDDEN", "The requested resource is unavailable.", status=404)
         action = Action.SOURCE_DOWNLOAD if download else Action.DOCUMENT_READ
         resource = DocumentResource(
             document_id=artifact.document_id,
@@ -901,6 +1216,7 @@ class ChatService:
             current_version_id=artifact.current_version_id or artifact.version_id,
             version_id=artifact.version_id,
             version_status=artifact.version_status,
+                owner_department_id=artifact.owner_department_id,
             acl=tuple(artifact.acl),
             policy_epoch=None,
         )

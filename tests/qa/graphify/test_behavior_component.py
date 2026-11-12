@@ -3,7 +3,7 @@ import os
 import stat
 import unittest
 
-from _baseline import GRAPH, GRAPH_DIR, HTML, REPORT, RUNBOOK, SCRIPT, read
+from ._baseline import GRAPH, GRAPH_DIR, HTML, REPORT, RUNBOOK, SCRIPT, read
 
 
 class GraphifyBehaviorTests(unittest.TestCase):

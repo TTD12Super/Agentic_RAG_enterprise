@@ -6,10 +6,13 @@ from .model_gateway import (
     ModelProviderError,
     ModelUnavailable,
 )
+from .gemini import GeminiProviderError, GeminiStreamProvider
 
 __all__ = [
     "ModelEgressDenied",
     "ModelGateway",
     "ModelProviderError",
     "ModelUnavailable",
+    "GeminiProviderError",
+    "GeminiStreamProvider",
 ]

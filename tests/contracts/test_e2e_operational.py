@@ -2,7 +2,7 @@
 
 import unittest
 
-from _baseline import require_all, section
+from ._baseline import require_all, section
 
 
 class E2EOperationalTests(unittest.TestCase):

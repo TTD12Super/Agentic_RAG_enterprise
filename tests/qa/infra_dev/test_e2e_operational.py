@@ -1,7 +1,7 @@
 import subprocess
 import unittest
 
-from _baseline import COMPOSE, HANDOFF, ROOT, SCRIPT, task, read, compose_config
+from ._baseline import COMPOSE, HANDOFF, ROOT, SCRIPT, task, read, compose_config
 
 
 class InfrastructureOperationalTests(unittest.TestCase):

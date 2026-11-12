@@ -4,7 +4,7 @@ import ast
 import re
 import unittest
 
-from _baseline import CONFIG_PATH, CONTRACT_PATH, MAIN_PATH, ROOT, read, tree
+from ._baseline import CONFIG_PATH, CONTRACT_PATH, MAIN_PATH, ROOT, read, tree
 
 
 class BackendBootstrapSecurityTests(unittest.TestCase):

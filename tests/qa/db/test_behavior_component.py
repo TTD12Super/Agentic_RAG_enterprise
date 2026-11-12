@@ -1,6 +1,6 @@
 import unittest
 
-from _baseline import ALEMBIC_INI, DB_APP, ENV_PY, MIGRATIONS, migration_files, migration_text, read
+from ._baseline import ALEMBIC_INI, DB_APP, ENV_PY, MIGRATIONS, migration_files, migration_text, read
 
 
 class DatabaseBaselineBehaviorTests(unittest.TestCase):

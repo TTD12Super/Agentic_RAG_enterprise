@@ -3,7 +3,7 @@
 import ast
 import unittest
 
-from _baseline import (
+from ._baseline import (
     CONTRACT_PATH,
     HANDOFF_PATH,
     MAIN_PATH,

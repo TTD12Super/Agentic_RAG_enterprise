@@ -122,6 +122,22 @@ def test_acl_explicit_deny_overrides_employee_read_allow():
     assert decision.reason_code == "EXPLICIT_DENY"
 
 
+def test_document_catalog_honors_manager_explicit_deny():
+    headers, user_id = auth("website_manager")
+    document_id, _, _ = publish(headers)
+    updated = request(
+        "POST",
+        f"/api/v1/documents/{document_id}/access",
+        headers={**headers, **key("security-catalog-deny")},
+        json={"grants": [{"action": "document:read", "effect": "DENY", "user_id": user_id}]},
+    )
+
+    assert updated.status_code == 200
+    listed = request("GET", "/api/v1/documents", headers=headers)
+    assert listed.status_code == 200
+    assert all(item["document_id"] != str(document_id) for item in listed.json()["items"])
+
+
 def test_revoked_document_fails_current_version_policy_check():
     headers, _ = auth("website_manager")
     document_id, version_id, _ = publish(headers)

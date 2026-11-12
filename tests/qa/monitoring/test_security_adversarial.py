@@ -1,6 +1,6 @@
 import unittest
 
-from _baseline import ALERTMANAGER, COMPOSE, OTEL, RUNBOOK, read
+from ._baseline import ALERTMANAGER, COMPOSE, OTEL, RUNBOOK, read
 
 
 class MonitoringSecurityTests(unittest.TestCase):

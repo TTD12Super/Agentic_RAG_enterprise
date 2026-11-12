@@ -1,6 +1,6 @@
 import unittest
 
-from _baseline import BOOT_HANDOFF, compose, compose_config_result, database, handoff
+from ._baseline import BOOT_HANDOFF, compose, compose_config_result, database, handoff
 
 
 class DisposablePostgresOperationalTests(unittest.TestCase):

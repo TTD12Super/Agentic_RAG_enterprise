@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -221,6 +221,35 @@ def test_revoked_citation_version_is_denied_for_preview_and_download():
     for download in (False, True):
         with pytest.raises(IdentityError) as error:
             service.citation(owner, completed.response_message_id, "c-1", download=download)
+        assert error.value.status_code == 404
+        assert error.value.code == "NOT_FOUND_OR_FORBIDDEN"
+
+
+def test_expired_citation_is_denied_for_preview_and_download():
+    result = QueryCompletion(
+        AnswerState.ANSWERED,
+        "answer",
+        ({"citation_id": "c-expired", "tenant_id": "tenant-a", "document_id": "doc-1", "version_id": "v-1"},),
+    )
+    service, repository, _, _ = make_service(result=result)
+    owner, conversation = authenticated_conversation(service, "user-a")
+    submitted = service.submit(owner, conversation.conversation_id, "expired citation", idempotency_key="security-cite-expired-001")
+    completed = service.status(owner, submitted.job_id)
+    assert completed.response_message_id is not None
+    repository.add_citation(
+        completed.response_message_id,
+        CitationArtifact(
+            {**result.citations[0], "expires_at": (NOW - timedelta(seconds=1)).isoformat().replace("+00:00", "Z")},
+            preview="expired",
+            download=b"expired",
+            classification="PUBLIC",
+            current_version_id="v-1",
+        ),
+    )
+
+    for download in (False, True):
+        with pytest.raises(IdentityError) as error:
+            service.citation(owner, completed.response_message_id, "c-expired", download=download)
         assert error.value.status_code == 404
         assert error.value.code == "NOT_FOUND_OR_FORBIDDEN"
 

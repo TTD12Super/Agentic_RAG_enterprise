@@ -4,7 +4,7 @@ import json
 import re
 import unittest
 
-from _common import load_frontend_json, read, read_frontend
+from ._common import load_frontend_json, read, read_frontend
 
 
 class FrontendContractIntegrationTests(unittest.TestCase):
@@ -46,12 +46,15 @@ class FrontendContractIntegrationTests(unittest.TestCase):
 
     def test_role_identifiers_match_contract_and_boundary(self) -> None:
         app = read_frontend("src/App.tsx")
+        client = read_frontend("src/api/client.ts")
         contract = read("docs/contracts/v1-baseline.md")
         boundary = read("docs/design/IMPLEMENTATION-BOUNDARY.md")
         for role in ("system_admin", "website_manager", "employee", "chairman"):
-            self.assertIn(role, app)
             self.assertIn(role, contract)
             self.assertIn(role, boundary)
+        self.assertIn("roles: string[]", client)
+        self.assertIn("system_admin", app)
+        self.assertIn("website_manager", app)
 
     def test_polling_and_maintenance_semantics_are_preserved(self) -> None:
         boundary = read("docs/design/IMPLEMENTATION-BOUNDARY.md")

@@ -2,7 +2,7 @@
 
 import unittest
 
-from _baseline import BASELINE, json_blocks, require_all, section
+from ._baseline import BASELINE, json_blocks, require_all, section
 
 
 class ContractIntegrationTests(unittest.TestCase):

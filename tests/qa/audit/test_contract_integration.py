@@ -1,6 +1,6 @@
 import unittest
 
-from _baseline import BASELINE_CONTRACT, EVENTS_CONTRACT, HANDOFF, read
+from ._baseline import BASELINE_CONTRACT, EVENTS_CONTRACT, HANDOFF, read
 
 
 class AuditContractTests(unittest.TestCase):

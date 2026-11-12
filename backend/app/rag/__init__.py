@@ -23,6 +23,7 @@ from .answer import (
     AnswerStatus,
     DirectAnswerPipeline,
     GeneratedAnswer,
+    PreparedAnswer,
 )
 from .parent_child import (
     ChildEvidence,
@@ -53,6 +54,7 @@ __all__ = [
     "AnswerStatus",
     "DirectAnswerPipeline",
     "GeneratedAnswer",
+    "PreparedAnswer",
     "ChildEvidence",
     "ParentEvidence",
     "ParentExpansionResult",

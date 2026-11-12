@@ -1,1 +1,1 @@
-"""Independent QA for ING-001."""
+"""Ingestion QA package."""

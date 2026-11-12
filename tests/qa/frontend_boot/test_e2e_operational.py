@@ -6,7 +6,7 @@ import unittest
 import urllib.error
 import urllib.request
 
-from _common import FRONTEND, load_frontend_json, read_frontend, run_frontend
+from ._common import FRONTEND, load_frontend_json, read_frontend, run_frontend
 
 
 class FrontendE2EOperationalTests(unittest.TestCase):

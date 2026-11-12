@@ -1,1 +1,1 @@
-"""Deterministic QA checks for the disposable PostgreSQL bootstrap."""
+"""Infrastructure bootstrap QA package."""

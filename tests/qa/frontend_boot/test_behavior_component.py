@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import re
 import unittest
 
-from _common import read_frontend
+from ._common import read_frontend
 
 
 class FrontendBehaviorComponentTests(unittest.TestCase):
@@ -13,48 +12,44 @@ class FrontendBehaviorComponentTests(unittest.TestCase):
 
     def test_app_name_drives_heading(self) -> None:
         source = read_frontend("src/App.tsx")
-        self.assertIn("<h1 id=\"app-title\">{appConfig.name}</h1>", source)
+        self.assertIn("<strong>{appConfig.name}</strong>", source)
 
     def test_hero_has_accessible_label(self) -> None:
         source = read_frontend("src/App.tsx")
-        self.assertIn('aria-labelledby="app-title"', source)
+        self.assertIn('aria-labelledby="chat-title"', source)
+        self.assertIn('<h1 id="chat-title">How can I help today?</h1>', source)
 
     def test_readiness_is_exposed_as_status(self) -> None:
         source = read_frontend("src/App.tsx")
-        self.assertIn('<div className="status" role="status">', source)
-        self.assertIn("Frontend baseline ready", source)
+        self.assertIn('className="processing-row" role="status"', source)
+        self.assertIn("Generating an answer from authorized sources", source)
 
     def test_workspace_has_authorized_chat_heading(self) -> None:
         source = read_frontend("src/App.tsx")
-        self.assertIn('<h2 id="workspace-title">Authorized knowledge chat</h2>', source)
+        self.assertIn('<p className="eyebrow">Enterprise knowledge workspace</p>', source)
+        self.assertIn('<h1 id="chat-title">How can I help today?</h1>', source)
 
     def test_workspace_references_contract_api_boundary(self) -> None:
         source = read_frontend("src/App.tsx")
-        self.assertIn("approved <code>/api/v1</code> contracts", source)
+        self.assertIn("The backend enforces identity and source permissions", source)
 
     def test_boundary_chips_are_all_present(self) -> None:
         source = read_frontend("src/App.tsx")
         for label in (
-            "Backend authorization is authoritative",
-            "Durable-job polling",
-            "No token streaming in MVP",
+            "backend enforces identity and source permissions",
+            "durable RAG query job",
         ):
             self.assertIn(label, source)
 
-    def test_canonical_role_tuple_is_exact(self) -> None:
+    def test_roles_are_received_from_backend_identity(self) -> None:
         source = read_frontend("src/App.tsx")
-        match = re.search(r"const supportedRoles = \[(.*?)\] as const", source, re.S)
-        self.assertIsNotNone(match)
-        self.assertEqual(
-            re.findall(r"'([^']+)'", match.group(1)),
-            ["system_admin", "website_manager", "employee", "chairman"],
-        )
+        self.assertIn("principal?.roles.includes(role)", source)
+        self.assertIn("principal?.roles.join(', ')", source)
 
-    def test_role_chips_use_stable_role_keys(self) -> None:
+    def test_role_preview_is_not_client_controlled(self) -> None:
         source = read_frontend("src/App.tsx")
-        self.assertIn("supportedRoles.map((role) =>", source)
-        self.assertIn('key={role}', source)
-        self.assertIn('className="role-chip"', source)
+        self.assertNotIn('aria-label="Preview role"', source)
+        self.assertIn("No client-side role preview is used.", source)
 
     def test_root_mount_uses_strict_mode(self) -> None:
         source = read_frontend("src/main.tsx")

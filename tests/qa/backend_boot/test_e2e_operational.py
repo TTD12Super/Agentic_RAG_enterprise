@@ -4,7 +4,7 @@ from pathlib import Path
 import subprocess
 import unittest
 
-from _baseline import (
+from ._baseline import (
     BACKEND,
     CONFIG_PATH,
     HANDOFF_PATH,

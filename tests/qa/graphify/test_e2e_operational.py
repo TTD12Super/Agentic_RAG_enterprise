@@ -1,7 +1,7 @@
 import subprocess
 import unittest
 
-from _baseline import GRAPH, HTML, REPORT, ROOT, SCRIPT, graphify_bin, run_graphify
+from ._baseline import GRAPH, HTML, REPORT, ROOT, SCRIPT, graphify_bin, run_graphify
 
 
 @unittest.skipUnless(graphify_bin(), "graphify CLI is not installed")

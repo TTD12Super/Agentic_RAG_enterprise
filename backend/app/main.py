@@ -13,7 +13,6 @@ from .api.identity import router as identity_router
 from .core.config import get_settings
 from .identity.errors import IdentityError
 from .observability import CorrelationContext
-from .db.runtime import RuntimeDatabaseUnavailable
 
 settings = get_settings()
 app = FastAPI(title=settings.app_name, version="0.1.0")
@@ -54,26 +53,6 @@ async def identity_error_handler(
             "retryable": error.retryable,
         },
         headers=headers,
-        media_type="application/problem+json",
-    )
-
-
-@app.exception_handler(RuntimeDatabaseUnavailable)
-async def runtime_database_error_handler(
-    request: Request, error: RuntimeDatabaseUnavailable
-) -> JSONResponse:
-    """Keep configured database failures inside the public problem contract."""
-
-    context = CorrelationContext.from_headers(request.headers)
-    return JSONResponse(
-        status_code=503,
-        content={
-            "code": "DATABASE_UNAVAILABLE",
-            "message": "The data service is temporarily unavailable.",
-            "request_id": context.request_id,
-            "retryable": True,
-        },
-        headers={**context.response_headers, "Retry-After": "5"},
         media_type="application/problem+json",
     )
 

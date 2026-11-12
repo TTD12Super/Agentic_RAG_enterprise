@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from backend.app.knowledge.models import inherit_acl, to_qdrant_payload
 
-from _baseline import MIGRATION, make_child, make_document, make_parent, make_version, read
+from ._baseline import MIGRATION, make_child, make_document, make_parent, make_version, read
 
 
 class KnowledgeContractIntegrationTests(unittest.TestCase):

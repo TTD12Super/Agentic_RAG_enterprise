@@ -2,7 +2,7 @@ import subprocess
 import sys
 import unittest
 
-from _baseline import ALERTS, COMPOSE, HANDOFF, MONITORING, ROOT, task, read
+from ._baseline import ALERTS, COMPOSE, HANDOFF, MONITORING, ROOT, task, read
 
 
 class MonitoringOperationalTests(unittest.TestCase):

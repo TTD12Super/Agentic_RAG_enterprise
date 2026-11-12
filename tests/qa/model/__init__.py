@@ -1,1 +1,1 @@
-"""Independent QA package for MODEL-001."""
+"""Model QA package."""

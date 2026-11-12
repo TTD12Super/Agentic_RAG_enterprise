@@ -1,6 +1,6 @@
 import unittest
 
-from _baseline import HANDOFF, README, RUNBOOK, SCRIPT, task, read
+from ._baseline import HANDOFF, README, RUNBOOK, SCRIPT, task, read
 
 
 class InfrastructureContractTests(unittest.TestCase):

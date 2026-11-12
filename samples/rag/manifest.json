@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0",
+  "corpus_id": "synthetic-enterprise-policies-v1",
+  "provenance": {
+    "kind": "synthetic",
+    "owner": "Enterprise Agentic RAG local QA",
+    "source": "Generated locally for deterministic retrieval and citation tests",
+    "external_sources": []
+  },
+  "tenant_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "queries": {
+    "answerable": [
+      "What approval is needed for equipment purchases above 5,000 USD?",
+      "How long are security audit logs retained?",
+      "When must employees submit travel receipts?"
+    ],
+    "no_answer": "What is the lunar export licensing process?"
+  },
+  "documents": [
+    {
+      "document_id": "11111111-1111-4111-8111-111111111111",
+      "version_id": "11111111-1111-4111-8111-111111111112",
+      "chunk_id": "11111111-1111-4111-8111-111111111113",
+      "version_number": 1,
+      "title": "Equipment Purchasing Policy",
+      "filename": "equipment-purchasing-policy.pdf",
+      "content_path": "documents/equipment-purchasing-policy.md",
+      "sha256": "945677096f080ead82ad92429d2661ad14c1fe520bf9a8155b609422bba32504",
+      "size_bytes": 257,
+      "mime_type": "application/pdf",
+      "classification": "PUBLIC",
+      "owner_department_id": null,
+      "acl_policy_ref": "sample-public-policy",
+      "locator": {
+        "kind": "PDF",
+        "page": 1,
+        "source_span": {
+          "start": 0,
+          "end": 257
+        }
+      }
+    },
+    {
+      "document_id": "22222222-2222-4222-8222-222222222221",
+      "version_id": "22222222-2222-4222-8222-222222222222",
+      "chunk_id": "22222222-2222-4222-8222-222222222223",
+      "version_number": 1,
+      "title": "Information Security Retention",
+      "filename": "security-retention-policy.docx",
+      "content_path": "documents/security-retention-policy.md",
+      "sha256": "f94b23913680b32da4935bcb5d81ad0045265f847a2b15286eb9c00a4ad18f69",
+      "size_bytes": 231,
+      "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "classification": "INTERNAL",
+      "owner_department_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      "acl_policy_ref": "sample-security-policy",
+      "locator": {
+        "kind": "DOCX",
+        "heading": "Information Security Retention",
+        "paragraph": 2
+      }
+    },
+    {
+      "document_id": "33333333-3333-4333-8333-333333333331",
+      "version_id": "33333333-3333-4333-8333-333333333332",
+      "chunk_id": "33333333-3333-4333-8333-333333333333",
+      "version_number": 1,
+      "title": "Travel Reimbursement Policy",
+      "filename": "travel-reimbursement-policy.xlsx",
+      "content_path": "documents/travel-reimbursement-policy.md",
+      "sha256": "ae6eb473d0cba76c36d2108bef2081160ee42e0ccf7ac2bc729208e42e9fa1ca",
+      "size_bytes": 248,
+      "mime_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "classification": "INTERNAL",
+      "owner_department_id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      "acl_policy_ref": "sample-finance-policy",
+      "locator": {
+        "kind": "XLSX",
+        "sheet": "Reimbursement",
+        "cell_range": "A2:D7"
+      }
+    }
+  ]
+}

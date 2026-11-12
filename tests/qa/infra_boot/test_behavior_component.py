@@ -1,6 +1,6 @@
 import unittest
 
-from _baseline import compose
+from ._baseline import compose
 
 
 class DisposablePostgresBehaviorTests(unittest.TestCase):

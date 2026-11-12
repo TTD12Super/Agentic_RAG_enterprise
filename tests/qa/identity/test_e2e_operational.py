@@ -2,7 +2,7 @@ import subprocess
 import sys
 import unittest
 
-from _baseline import API, HANDOFF, MAIN, ROOT, task, read
+from ._baseline import API, HANDOFF, MAIN, ROOT, task, read
 
 
 class IdentityOperationalTests(unittest.TestCase):

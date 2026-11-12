@@ -1,6 +1,6 @@
 import unittest
 
-from _baseline import ALERTMANAGER, ALERTS, COMPOSE, DATASOURCE, DASHBOARD, MONITORING, OTEL, PROMETHEUS, read
+from ._baseline import ALERTMANAGER, ALERTS, COMPOSE, DATASOURCE, DASHBOARD, MONITORING, OTEL, PROMETHEUS, read
 
 
 class MonitoringBehaviorTests(unittest.TestCase):

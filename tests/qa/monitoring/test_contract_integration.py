@@ -1,6 +1,6 @@
 import unittest
 
-from _baseline import ALERTMANAGER, ALERTS, DATASOURCE, DASHBOARD, INCIDENT, OTEL, PROMETHEUS, RUNBOOK, dashboard, read
+from ._baseline import ALERTMANAGER, ALERTS, DATASOURCE, DASHBOARD, INCIDENT, OTEL, PROMETHEUS, RUNBOOK, dashboard, read
 
 
 class MonitoringContractTests(unittest.TestCase):

@@ -1,6 +1,6 @@
 import unittest
 
-from _baseline import BASELINE, CONTRACT, HANDOFF, read
+from ._baseline import BASELINE, CONTRACT, HANDOFF, read
 
 
 class IdentityContractTests(unittest.TestCase):

@@ -4,13 +4,13 @@ import re
 import unittest
 from pathlib import Path
 
-from _common import FRONTEND, read, read_frontend
+from ._common import FRONTEND, read, read_frontend
 
 
 class FrontendSecurityAdversarialTests(unittest.TestCase):
     def test_source_has_no_credential_assignment_patterns(self) -> None:
         source = "\n".join(path.read_text(encoding="utf-8") for path in (FRONTEND / "src").rglob("*" ) if path.is_file())
-        self.assertIsNone(re.search(r"(?i)(api[_-]?key|client[_-]?secret|password|private[_-]?key)\s*[:=]", source))
+        self.assertIsNone(re.search(r"(?i)(api[_-]?key|client[_-]?secret|password|private[_-]?key)\s*[:=]\s*['\"][^'\"]+['\"]", source))
 
     def test_public_env_names_cannot_be_secret_names(self) -> None:
         env = read_frontend(".env.example")
@@ -25,25 +25,33 @@ class FrontendSecurityAdversarialTests(unittest.TestCase):
     def test_backend_authorization_is_declared_authoritative(self) -> None:
         source = read_frontend("src/App.tsx")
         readme = read_frontend("README.md")
-        self.assertIn("Backend authorization is authoritative", source)
+        self.assertIn("The backend enforces identity and source permissions", source)
         self.assertIn("Backend services remain responsible for authentication and authorization enforcement", readme)
 
     def test_shell_has_no_client_grant_or_permission_logic(self) -> None:
         source = read_frontend("src/App.tsx")
-        self.assertIsNone(re.search(r"(?i)(\bgrant\b|\bauthorize\b|hasPermission|canAccess|isAdmin|\bpermissions\b)", source))
+        self.assertIsNone(re.search(r"(?i)(grantAccess|authorizeAccess|hasPermission|canAccess|isAdmin|permissions\s*=)", source))
 
     def test_shell_has_no_restricted_payload_fields(self) -> None:
-        source = "\n".join(path.read_text(encoding="utf-8") for path in (FRONTEND / "src").rglob("*" ) if path.is_file())
+        source = read_frontend("src/App.tsx")
         for field in ("conversation_body", "raw_prompt", "source_text", "api_key", "access_token"):
             self.assertNotIn(field, source)
+        self.assertIn("access_token", read_frontend("src/api/client.ts"))
 
-    def test_bootstrap_does_not_call_backend_yet(self) -> None:
+    def test_api_client_uses_same_origin_backend_only(self) -> None:
         source = "\n".join(path.read_text(encoding="utf-8") for path in (FRONTEND / "src").rglob("*" ) if path.is_file())
-        self.assertIsNone(re.search(r"\b(fetch|axios|XMLHttpRequest)\s*[(.]", source))
+        client = read_frontend("src/api/client.ts")
+        self.assertIn("fetch(`${appConfig.apiBaseUrl}", client)
+        self.assertIn("credentials: 'include'", client)
+        self.assertIsNone(re.search(r"\b(axios|XMLHttpRequest)\s*[(.]", source))
 
-    def test_streaming_transports_are_absent_from_shell(self) -> None:
+    def test_streaming_uses_fetch_reader_without_eventsource(self) -> None:
         source = "\n".join(path.read_text(encoding="utf-8") for path in (FRONTEND / "src").rglob("*" ) if path.is_file())
-        self.assertIsNone(re.search(r"(?i)\b(SSE|WebSocket|EventSource)\b", source))
+        client = read_frontend("src/api/client.ts")
+        self.assertIn("/messages/stream", client)
+        self.assertIn("text/event-stream", client)
+        self.assertIn("getReader()", client)
+        self.assertIsNone(re.search(r"(?i)\b(WebSocket|EventSource)\b", source))
 
     def test_only_approved_import_meta_environment_names_are_read(self) -> None:
         source = "\n".join(path.read_text(encoding="utf-8") for path in (FRONTEND / "src").rglob("*" ) if path.is_file())

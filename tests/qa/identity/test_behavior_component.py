@@ -1,6 +1,6 @@
 import unittest
 
-from _baseline import API, IDENTITY, MAIN, read
+from ._baseline import API, IDENTITY, MAIN, read
 
 
 class IdentityBehaviorTests(unittest.TestCase):
@@ -23,13 +23,13 @@ class IdentityBehaviorTests(unittest.TestCase):
         self.assertTrue((API / "identity.py").is_file())
 
     def test_sign_in_route_exists(self):
-        self.assertIn('@router.post("/sign-in"', read(API / "identity.py"))
+        self.assertIn('@router.post("/auth/sign-in"', read(API / "identity.py"))
 
     def test_current_identity_route_exists(self):
-        self.assertIn('@router.get("/me"', read(API / "identity.py"))
+        self.assertIn('@router.get("/auth/me"', read(API / "identity.py"))
 
     def test_sign_out_route_exists(self):
-        self.assertIn('@router.post("/sign-out"', read(API / "identity.py"))
+        self.assertIn('@router.post("/auth/sign-out"', read(API / "identity.py"))
 
     def test_router_uses_versioned_api_prefix(self):
         self.assertIn('prefix=settings.api_prefix', read(MAIN))

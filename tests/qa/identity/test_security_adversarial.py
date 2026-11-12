@@ -1,6 +1,6 @@
 import unittest
 
-from _baseline import API, IDENTITY, MAIN, read
+from ._baseline import API, IDENTITY, MAIN, read
 
 
 class IdentitySecurityTests(unittest.TestCase):

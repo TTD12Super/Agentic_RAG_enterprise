@@ -13,7 +13,7 @@ This workflow uses the React client, the Python/FastAPI Core MVP, a PostgreSQL-b
 9. Parent expansion, source fetch and citation creation perform a second authorization check. Retrieved text and tool output remain untrusted data.
 10. The Python model gateway sends only authorized relevant excerpts to approved external LLM APIs, with bounded retry and approved fallback.
 11. Evidence verification maps factual claims to authorized source spans. Conflicts are disclosed; insufficient evidence produces abstention or a permitted partial answer.
-12. The Core rechecks policy before delivering the full answer and before any source is opened. MVP does not stream tokens.
+12. The Core rechecks policy before delivering answer deltas and again before any source is opened. The final persisted answer is the recovery source if the stream is interrupted.
 13. The system writes only permitted conversation history, usage telemetry, citations and privacy-safe audit events.
 14. An irrecoverable ordinary failure returns a clear retryable error. Maintenance interruption is a separate path that resumes or safely replays an idempotent read-only step.
 

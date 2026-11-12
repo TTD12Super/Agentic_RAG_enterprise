@@ -37,7 +37,7 @@ This draft incorporates the current `GOALS.md` supplied by the Project Owner, `d
 | Document publication | Two administrative reviews; only latest approved `ACTIVE` version served | OWNER-CONFIRMED |
 | Upload maintenance | Any administrator document upload starts chatbot-wide maintenance until processing and final review/approval or safe cancellation/failure completion | OWNER-CONFIRMED |
 | Existing questions during maintenance | Preserve and safely resume in-flight question jobs after maintenance | OWNER-CONFIRMED |
-| UX response | No token streaming; display queue position, processing status, and final answer; source details hidden until expanded | OWNER-CONFIRMED |
+| UX response | Stream provider-neutral answer deltas over authorized SSE when supported; display queue/progress and the durably persisted final answer for recovery; source details hidden until expanded | OWNER-CONFIRMED |
 
 **Important capacity interpretation:** The owner-provided proposal defines 500 users as **500 concurrent active sessions**, not 500 simultaneous LLM generations. This remains a load-test target, not a demonstrated benchmark or SLA.
 
@@ -145,7 +145,7 @@ Two top-level document classifications: `PUBLIC` and `INTERNAL`; internal docume
 8. Retrieval uses approved dense + lexical search, with authorization filters in **every** retrieval branch, then approved fusion, optional reranking and a second authorization check when fetching source content. Embeddings or index metadata do not replace the authoritative policy store.
 9. Only authorized, approved, latest `ACTIVE` document versions form the context. Retrieved text is untrusted data, never system instructions. The Python model gateway sends only authorized relevant excerpts to **approved external LLM APIs**, with bounded retry and approved fallback on provider failure.
 10. Verify answer provenance and current permissions. If evidence is insufficient, report it rather than inventing company facts; if partially supported, return only the supported part and identify the gap. Record source references for on-demand viewing.
-11. The result is delivered **in full, without token streaming**. The UI shows the final answer with an optional collapsed source section; opening original documents rechecks current authorization. Update permitted conversation history, usage telemetry and audited events.
+11. The result is delivered through an authorized server-side token stream when supported; the final answer is persisted before the `done` event. The UI shows incremental text with an optional collapsed source section; opening original documents rechecks current authorization. Update permitted conversation history, usage telemetry and audited events.
 12. If normal workflow processing fails irrecoverably, return a clear failure and let the user resubmit. **Maintenance resume is a separate exception** and must preserve progress or safely replay an unfinished read-only step.
 
 ## 7. Document upload, approval, publication, and maintenance
@@ -203,7 +203,7 @@ No actual database, broker, cloud vendor, vector technology, or Rust framework b
 - Design request handling and independent worker scaling for a **500-user capacity target**, without assuming 500 simultaneous LLM inference jobs. Rate limits and provider quotas are part of capacity planning.
 - Before the 500-user claim is accepted, run load tests with a **defined workload**: concurrent sessions, query arrival rate, simple/complex ratio, cache hit rate, document size/corpus, permission mix, Chairman priority, LLM API quotas and maintenance frequency.
 - Report throughput, queue wait, end-to-end response time, RAG execution time, p50/p95 latency, error rate, cloud cost and model/token consumption. Normal processing targets remain **<10 s for simple** and **<30 s for complex**; the peak-load proposal adds p95 ≤30/90 seconds and requires queue/maintenance/processing time to be reported separately.
-- Show `QUEUED`, queue position, `PROCESSING`, `MAINTENANCE`, `ANSWERED` or controlled failure status as applicable; **no token streaming**.
+- Show `QUEUED`, queue position, `PROCESSING`, `MAINTENANCE`, streamed answer deltas, `ANSWERED` or controlled failure status as applicable.
 - There is no approved monthly uptime SLA yet. Report planned upload maintenance separately from unplanned downtime.
 
 ### Security and monitoring

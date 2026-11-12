@@ -1,1 +1,1 @@
-"""Independent QA package for KNOW-001."""
+"""Knowledge QA package."""

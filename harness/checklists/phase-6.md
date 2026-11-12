@@ -1,8 +1,8 @@
 # Phase 6 — MVP release review
 
-- [ ] Separate memory by tenant/user/conversation
-- [ ] Policy-aware retrieval cache key
-- [ ] Revocation/version invalidation test
+- [x] Separate memory by tenant/user/conversation
+- [x] Policy-aware retrieval cache key
+- [x] Revocation/version invalidation test
 - [ ] Prompt-cache cost measurement
 
 ## Task mapping
@@ -10,13 +10,13 @@
 `RELEASE-001`
 
 ## Gate
-- [ ] Tests actually executed; command/result attached.
-- [ ] All phase blocking dependencies marked DONE.
-- [ ] Security and contract compatibility reviewed.
+- [x] Tests actually executed; command/result attached.
+- [x] All phase blocking dependencies marked DONE.
+- [x] Security and contract compatibility reviewed.
 - [ ] Tech Lead and human owner sign off before moving to next phase.
 
 ## Evidence links
-- Task IDs:
-- Test reports:
+- Task IDs: `RELEASE-001`
+- Test reports: `harness/handoffs/RELEASE-001-QA.md`, `harness/handoffs/RELEASE-001-SECURITY.md`, `harness/handoffs/RELEASE-001-LOCAL-FOLLOWUP.md`
 - ADRs:
-- Reviewer/date:
+- Reviewer/date: Main Agent / Tech Lead, 2026-11-11. Human owner sign-off pending; production gate remains NO-GO.

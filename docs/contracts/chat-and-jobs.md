@@ -9,7 +9,8 @@ This is the v1.0 approved shared boundary for implementation planning; it is not
 - `POST /api/v1/conversations` creates a conversation bound to the authenticated principal or a server-issued anonymous session.
 - `POST /api/v1/conversations/{conversation_id}/messages` submits a question with an idempotency key. Successful asynchronous admission returns `202` with an opaque job identifier and request correlation ID.
 - `GET /api/v1/conversations/{conversation_id}` returns only the current principal's own permitted history or the bound anonymous session's temporary history.
-- `GET /api/v1/query-jobs/{job_id}` returns an authorized caller's job state, safe progress and completed answer/citation references. Queue position is an estimate and can change. There is no token streaming in MVP.
+- `POST /api/v1/conversations/{conversation_id}/messages/stream` admits an authorized question and returns named SSE events (`message_start`, `citation`, `token`, `done`, `error`). The server sends only provider-neutral deltas; the Gemini credential never reaches the client.
+- `GET /api/v1/query-jobs/{job_id}` returns an authorized caller's durable job state and completed answer/citation references for recovery, audit and non-streaming clients. Queue position is an estimate and can change.
 
 Tenant, role, scope and session are resolved and verified by the server, never granted by a client or model claim. Every conversation and job operation enforces ownership, tenant and current authorization. A changed/revoked identity, policy or source version fails closed before retrieval, resume, result delivery and citation access.
 

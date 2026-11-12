@@ -141,6 +141,11 @@ class InMemoryConversationMemory:
                 return None
             return memory
 
+    def set_clock(self, clock: Callable[[], datetime]) -> None:
+        """Allow the owning local service to provide one deterministic clock."""
+
+        self._clock = clock
+
     def append(
         self,
         scope: CacheScope,

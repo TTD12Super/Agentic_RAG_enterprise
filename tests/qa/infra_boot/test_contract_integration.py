@@ -1,6 +1,6 @@
 import unittest
 
-from _baseline import compose, compose_config_result, database, handoff, tasks
+from ._baseline import compose, compose_config_result, database, handoff, tasks
 
 
 class DisposablePostgresContractTests(unittest.TestCase):

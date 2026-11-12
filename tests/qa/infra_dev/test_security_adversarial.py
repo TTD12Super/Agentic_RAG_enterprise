@@ -1,6 +1,6 @@
 import unittest
 
-from _baseline import COMPOSE, SCRIPT, read
+from ._baseline import COMPOSE, SCRIPT, read
 
 
 class InfrastructureSecurityTests(unittest.TestCase):

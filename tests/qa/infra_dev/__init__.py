@@ -1,1 +1,1 @@
-"""Four-family QA package for INFRA-001."""
+"""Infrastructure development QA package."""

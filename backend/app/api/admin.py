@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Annotated, Literal
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
-from fastapi import APIRouter, Header, Query, Request, Response
+from fastapi import APIRouter, Cookie, Header, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from ..authorization import (
@@ -77,6 +77,14 @@ class AccessRequest(_RequestModel):
     grants: list[AccessGrantRequest]
 
 
+class EmployeeAccessRequest(_RequestModel):
+    full_name: str = Field(min_length=1, max_length=160)
+    email: str = Field(min_length=3, max_length=320)
+    department: str = Field(min_length=1, max_length=160)
+    reason: str = Field(min_length=1, max_length=4000)
+    consent: bool
+
+
 class UploadRequest(_RequestModel):
     document_id: UUID | None = None
     version_id: UUID | None = None
@@ -110,6 +118,7 @@ class AdminApiState:
     document_grants: dict[tuple[str, str], tuple[AccessGrant, ...]]
     document_versions: dict[tuple[str, str], list[UUID]]
     idempotency: dict[tuple[str, str, str], tuple[str, str, dict[str, object]]]
+    access_requests: dict[str, dict[str, object]]
 
 
 policy_store = InMemoryPolicyStore(policy_epoch=1)
@@ -120,6 +129,7 @@ admin_state = AdminApiState(
     document_grants={},
     document_versions={},
     idempotency={},
+    access_requests={},
 )
 ingestion_service = admin_state.ingestion
 pep = admin_state.pep
@@ -135,6 +145,7 @@ def reset_state() -> None:
     admin_state.document_grants.clear()
     admin_state.document_versions.clear()
     admin_state.idempotency.clear()
+    admin_state.access_requests.clear()
     admin_state.policy_store.policy_epoch = 1
     admin_state.policy_store.grants.clear()
     admin_state.policy_store.revoked_principals.clear()
@@ -622,7 +633,6 @@ async def list_documents(
     """Return a policy-filtered document catalog for the real UI boundary."""
 
     context, principal = _resolve(request, response, authorization, action="admin:document:list")
-    management = bool({Role.SYSTEM_ADMIN.value, Role.WEBSITE_MANAGER.value} & set(principal.roles))
     tenant_uuid = _tenant_uuid(principal.tenant_id)
     documents: list[dict[str, object]] = []
     seen: set[str] = set()
@@ -634,15 +644,14 @@ async def list_documents(
             document = admin_state.ingestion.get_document(UUID(document_id), tenant_uuid)
         except IngestionError:
             continue
-        if not management:
-            if document.status != "ACTIVE" or document.current_version_id is None:
-                continue
-            try:
-                _enforce_document(context, principal, Action.DOCUMENT_READ, UUID(document_id))
-            except IdentityError as error:
-                if error.code == "AUTH_UNAVAILABLE":
-                    raise
-                continue
+        if document.status != "ACTIVE" or document.current_version_id is None:
+            continue
+        try:
+            _enforce_document(context, principal, Action.DOCUMENT_READ, UUID(document_id))
+        except IdentityError as error:
+            if error.code == "AUTH_UNAVAILABLE":
+                raise
+            continue
         documents.append(_document_payload(document))
     page = documents[offset : offset + limit]
     _record_success(context, principal, action="admin:document:list", code="DOCUMENTS_LISTED")
@@ -987,6 +996,74 @@ async def update_document_access(
     _bump_policy_epoch()
     _record_success(context, principal, action="admin:document:access", code="DOCUMENT_ACCESS_UPDATED")
     return {"document_id": document_id, "grants": [_grant_payload(grant) for grant in grants]}
+
+
+@router.post("/access-requests", status_code=202)
+async def create_access_request(
+    request: Request,
+    response: Response,
+    authorization: Annotated[str | None, Header()] = None,
+    anonymous_session: Annotated[str | None, Header(alias="X-Anonymous-Session")] = None,
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
+) -> dict[str, object]:
+    """Record an onboarding request without granting access or pretending to email."""
+
+    context = identity_api._request_context(request, response)
+    if not idempotency_key or not idempotency_key.strip():
+        raise _problem("IDEMPOTENCY_REQUIRED", "An idempotency key is required.")
+
+    principal: AuthenticatedPrincipal | None = None
+    if authorization:
+        try:
+            principal = identity_api.identity_service.resolve_bearer(
+                identity_api._bearer_token(authorization)
+            )
+        except IdentityError as error:
+            identity_api._record_identity_error(context, error, action="identity:access_request")
+            raise
+
+    body = await _body(request, EmployeeAccessRequest)
+    if not body.consent:
+        raise _problem("REQUEST_INVALID", "Consent is required.")
+
+    tenant_id = principal.tenant_id if principal else "public"
+    fingerprint = body.model_dump_json()
+    key = (tenant_id, "access_request", idempotency_key.strip())
+    existing = admin_state.idempotency.get(key)
+    if existing:
+        if existing[0] != fingerprint:
+            raise _problem(
+                "IDEMPOTENCY_KEY_REUSED",
+                "The idempotency key was already used for a different request.",
+                status_code=409,
+            )
+        return existing[2]
+
+    request_id = str(uuid4())
+    payload = {
+        "request_id": request_id,
+        "status": "PENDING_ADMIN_REVIEW",
+        "email_confirmation": "NOT_CONFIGURED",
+    }
+    admin_state.access_requests[request_id] = {
+        "tenant_id": tenant_id,
+        "requester_id": principal.user_id if principal else ("anonymous-session" if anonymous_session else "anonymous"),
+        **body.model_dump(),
+        "status": payload["status"],
+        "created_at": _utc_z(datetime.now(timezone.utc)),
+    }
+    admin_state.idempotency[key] = (fingerprint, request_id, payload)
+    identity_api._record(
+        context,
+        event="ACCESS_REQUEST_CREATED",
+        action="identity:access_request",
+        outcome="SUCCESS",
+        decision="ALLOW",
+        principal=principal,
+        code="ACCESS_REQUEST_RECORDED",
+        metadata={"route": "identity:access_request", "status_code": 202},
+    )
+    return payload
 
 
 @router.post("/documents", status_code=202)

@@ -1,6 +1,6 @@
 import unittest
 
-from _baseline import IGNORE, ROOT, RUNBOOK, SCRIPT, read
+from ._baseline import IGNORE, ROOT, RUNBOOK, SCRIPT, read
 
 
 class GraphifyContractTests(unittest.TestCase):

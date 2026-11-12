@@ -25,6 +25,7 @@ from ..core.chat import (
     CitationArtifact,
     ConversationMessage,
     ConversationRecord,
+    ConversationSummary,
     ConversationView,
     JobCheckpoint,
     JobState,
@@ -34,14 +35,24 @@ from ..core.chat import (
     AnswerState,
     _utc_z,
 )
+from ..identity.errors import IdentityError
 
 
 RUNTIME_NAMESPACE = UUID("7e0b38b7-9bd4-4c7a-9be4-dc3f4e2e0a17")
 _SLUG_SAFE = re.compile(r"[^a-z0-9-]+")
 
 
-class RuntimeDatabaseUnavailable(RuntimeError):
-    """Raised when the configured runtime database cannot serve a request."""
+class RuntimeDatabaseUnavailable(IdentityError):
+    """Safe public error raised when the configured database cannot serve a request."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            code="DATABASE_UNAVAILABLE",
+            status_code=503,
+            message="The data service is temporarily unavailable.",
+            retryable=True,
+            retry_after=5,
+        )
 
 
 def normalize_database_url(value: str) -> str:
@@ -136,7 +147,7 @@ class _PostgresAdapter:
         except RuntimeDatabaseUnavailable:
             raise
         except Exception as error:
-            raise RuntimeDatabaseUnavailable("runtime database is unavailable") from error
+            raise RuntimeDatabaseUnavailable() from error
 
     @staticmethod
     def ensure_tenant(cursor: object, tenant_id: str) -> UUID:
@@ -336,21 +347,43 @@ class PostgresChatRepository(_PostgresAdapter):
                 # The row's owner is checked in SQL; the scope is only the current authorization epoch.
                 cursor.execute(
                     """
-                    SELECT id, role, content, created_at
-                    FROM messages
-                    WHERE tenant_id = %s AND conversation_id = %s
-                    ORDER BY created_at, id
+                    SELECT m.id, m.role, m.content, m.created_at,
+                           q.response_message_id, q.checkpoint
+                    FROM messages m
+                    LEFT JOIN query_jobs q
+                      ON q.tenant_id = m.tenant_id AND q.response_message_id = m.id
+                    WHERE m.tenant_id = %s AND m.conversation_id = %s
+                    ORDER BY m.created_at, m.id
                     """,
                     (row["tenant_id"], row["id"]),
                 )
                 message_rows = cursor.fetchall()
-                messages = tuple(
-                    (
-                        MessageRecord(str(item["id"]), str(item["role"]).lower(), _as_utc(item["created_at"])),
-                        ConversationMessage(str(item["role"]).lower(), item["content"]),
+                messages = []
+                for item in message_rows:
+                    checkpoint = item.get("checkpoint") if hasattr(item, "get") else None
+                    completion = checkpoint.get("completion") if isinstance(checkpoint, dict) else None
+                    completion = completion if isinstance(completion, dict) else {}
+                    raw_citations = completion.get("citations", ())
+                    citations = tuple(dict(citation) for citation in raw_citations if isinstance(citation, dict))
+                    raw_reasons = completion.get("reason_codes", ())
+                    reasons = tuple(str(reason) for reason in raw_reasons)
+                    response_id = item.get("response_message_id") if hasattr(item, "get") else None
+                    role = str(item["role"]).lower()
+                    messages.append(
+                        (
+                            MessageRecord(
+                                str(item["id"]),
+                                role,
+                                _as_utc(item["created_at"]),
+                                answer_id=str(response_id) if response_id else None,
+                                status=str(completion.get("status")) if completion.get("status") else None,
+                                citations=citations,
+                                reason_codes=reasons,
+                            ),
+                            ConversationMessage(role, item["content"]),
+                        )
                     )
-                    for item in message_rows
-                )
+                messages = tuple(messages)
                 expires_at = created_at + (
                     timedelta(days=7) if owner_kind is ActorKind.ANONYMOUS else timedelta(days=180)
                 )
@@ -366,6 +399,86 @@ class PostgresChatRepository(_PostgresAdapter):
                 if owner_kind is ActorKind.ANONYMOUS and _as_utc(datetime.now(timezone.utc)) >= expires_at:
                     return None
                 return ConversationView(record, messages)
+
+    def list_conversations(
+        self,
+        *,
+        current_scope: CacheScope,
+        limit: int,
+        offset: int,
+        search: str | None,
+    ) -> tuple[tuple[ConversationSummary, ...], int]:
+        """List only owner-scoped conversation metadata; never select message bodies."""
+
+        if current_scope.principal_id.startswith("anonymous:"):
+            session_id = _parse_uuid(current_scope.principal_id.removeprefix("anonymous:"))
+            if session_id is None:
+                return (), 0
+            from_sql = """
+                FROM conversations c
+                JOIN anonymous_sessions s
+                  ON s.tenant_id = c.tenant_id AND s.session_hash = c.anonymous_session_hash
+            """
+            where = ["c.tenant_id = %s", "c.status <> 'DELETED'", "s.id = %s"]
+            params: list[object] = [tenant_uuid(current_scope.tenant_id), session_id]
+        else:
+            from_sql = "FROM conversations c"
+            where = ["c.tenant_id = %s", "c.status <> 'DELETED'", "c.user_id = %s"]
+            params = [tenant_uuid(current_scope.tenant_id), user_uuid(current_scope.principal_id)]
+
+        if search and search.strip():
+            escaped = search.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            where.append(
+                "EXISTS (SELECT 1 FROM messages ms WHERE ms.tenant_id = c.tenant_id "
+                "AND ms.conversation_id = c.id AND ms.role = 'USER' "
+                "AND ms.content ILIKE %s ESCAPE '\\')"
+            )
+            params.append(f"%{escaped}%")
+
+        predicate = " AND ".join(where)
+        with self.connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(f"SELECT count(*) AS total {from_sql} WHERE {predicate}", tuple(params))
+                total = int(cursor.fetchone()["total"])
+                cursor.execute(
+                    f"""
+                    SELECT c.id, c.created_at, c.last_activity_at,
+                           first_user.content AS first_user_content,
+                           counts.message_count
+                    {from_sql}
+                    LEFT JOIN LATERAL (
+                        SELECT m.content
+                        FROM messages m
+                        WHERE m.tenant_id = c.tenant_id
+                          AND m.conversation_id = c.id
+                          AND m.role = 'USER'
+                        ORDER BY m.created_at, m.id
+                        LIMIT 1
+                    ) first_user ON TRUE
+                    LEFT JOIN LATERAL (
+                        SELECT count(*)::int AS message_count
+                        FROM messages m
+                        WHERE m.tenant_id = c.tenant_id AND m.conversation_id = c.id
+                    ) counts ON TRUE
+                    WHERE {predicate}
+                    ORDER BY c.last_activity_at DESC, c.id DESC
+                    LIMIT %s OFFSET %s
+                    """,
+                    (*params, limit, offset),
+                )
+                rows = []
+                for row in cursor.fetchall():
+                    raw_title = str(row["first_user_content"] or "").strip()
+                    rows.append(
+                        ConversationSummary(
+                            conversation_id=str(row["id"]),
+                            title=raw_title[:96] or "New conversation",
+                            created_at=_as_utc(row["created_at"]),
+                            updated_at=_as_utc(row["last_activity_at"]),
+                            message_count=int(row["message_count"] or 0),
+                        )
+                    )
+                return tuple(rows), total
 
     def append_message(
         self,
@@ -712,6 +825,32 @@ class PostgresChatRepository(_PostgresAdapter):
         refreshed = self.get_job(job_id, current_scope=scope)
         if refreshed is None:
             raise StaleScopeError("job failure is stale")
+        return refreshed
+
+    def cancel_job(self, job_id: str, *, scope: CacheScope, error_code: str) -> QueryJob:
+        current = self.get_job(job_id, current_scope=scope)
+        if current is None:
+            raise StaleScopeError("job scope is stale")
+        if current.state in {JobState.COMPLETED, JobState.FAILED, JobState.CANCELLED}:
+            return current
+        checkpoint = self._checkpoint_json(current.checkpoint) if current.checkpoint is not None else {}
+        checkpoint["error_code"] = error_code
+        with self.connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    UPDATE query_jobs
+                    SET status = 'CANCELLED', completed_at = now(), checkpoint = %s,
+                        checkpoint_schema_version = '1.0', revision = revision + 1,
+                        lease_id = NULL, worker_id = NULL, heartbeat_at = NULL, lease_expires_at = NULL
+                    WHERE id = %s AND tenant_id = %s
+                      AND status NOT IN ('COMPLETED', 'FAILED', 'CANCELLED')
+                    """,
+                    (_jsonb(checkpoint), UUID(job_id), tenant_uuid(scope.tenant_id)),
+                )
+        refreshed = self.get_job(job_id, current_scope=scope)
+        if refreshed is None:
+            raise StaleScopeError("job cancellation is stale")
         return refreshed
 
     def remember_submission(self, *, tenant_id: str, owner_id: str, conversation_id: str, key: str, fingerprint: str, job_id: str) -> None:

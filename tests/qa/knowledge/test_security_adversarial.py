@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 from backend.app.knowledge.models import ChunkMetadata, inherit_acl, to_qdrant_payload
 
-from _baseline import make_child, make_parent
+from ._baseline import make_child, make_parent
 
 
 class KnowledgeSecurityAdversarialTests(unittest.TestCase):

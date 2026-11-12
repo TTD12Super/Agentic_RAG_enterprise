@@ -9,7 +9,7 @@ from backend.app.knowledge.models import (
     SourceSpan,
 )
 
-from _baseline import make_document, make_version
+from ._baseline import make_document, make_version
 
 
 class KnowledgeBehaviorTests(unittest.TestCase):

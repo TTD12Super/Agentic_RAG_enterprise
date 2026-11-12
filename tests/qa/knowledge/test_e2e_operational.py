@@ -3,7 +3,7 @@ import subprocess
 import sys
 import unittest
 
-from _baseline import GRAPH, HANDOFF, ROOT, read, task
+from ._baseline import GRAPH, HANDOFF, ROOT, read, task
 
 
 class KnowledgeOperationalTests(unittest.TestCase):
@@ -23,8 +23,8 @@ class KnowledgeOperationalTests(unittest.TestCase):
     def test_task_scope_allows_only_knowledge_backend_tests_and_handoff(self):
         self.assertEqual(task("KNOW-001")["scope"]["write_paths"], ["backend/app/knowledge", "backend/tests", "harness/handoffs"])
 
-    def test_handoff_is_waiting_for_main_review(self):
-        self.assertIn("READY_FOR_MAIN_REVIEW", read(HANDOFF))
+    def test_handoff_records_main_review_acceptance(self):
+        self.assertIn("ACCEPTED — MAIN AGENT REVIEW", read(HANDOFF))
 
     def test_handoff_records_database_probe_boundary(self):
         handoff = read(HANDOFF)

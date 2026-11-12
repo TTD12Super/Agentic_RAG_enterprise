@@ -60,6 +60,7 @@
     "DASH-API-001": {"requested_agents": 1},
     "UI-001": {"requested_agents": 1},
     "CACHE-001": {"requested_agents": 1},
+    "INTEGRATION-001": {"requested_agents": 1},
     "RELEASE-001": {"requested_agents": 1},
     "INT-001": {"requested_agents": 1}
   },
@@ -735,7 +736,7 @@
       "phase": 5,
       "title": "Implement role-aware admin and chat frontend",
       "owner": "frontend",
-      "status": "PLANNED",
+      "status": "DONE",
       "depends_on": [
         "IDENT-001",
         "ING-001",
@@ -826,6 +827,30 @@
       "contracts": ["docs/contracts/admin-management.md", "docs/contracts/events-and-audit.md", "docs/contracts/identity-and-policy.md"],
       "validation": ["Run integration tests for authorized and denied dashboard and feedback review", "Verify data minimization, estimate labels, metric provenance and unavailable states", "Record exact commands and results in the handoff"],
       "handoff": "harness/handoffs/DASH-API-001.md"
+    },
+    {
+      "id": "INTEGRATION-001",
+      "phase": 5,
+      "title": "Connect frontend chat to backend and local RAG runtime",
+      "owner": "tech_lead",
+      "status": "DONE",
+      "depends_on": ["UI-001", "CHAT-001", "ORCH-001", "ING-001", "RAG-001", "RAG-002", "EVID-001"],
+      "deliverables": [
+        "Frontend chat API client with durable query-job polling",
+        "Backend local runtime wiring for permission-aware retrieval and citation verification",
+        "End-to-end integration evidence through the Vite proxy"
+      ],
+      "acceptance": "A browser chat query reaches the backend, executes the local RAG retrieval/answer/citation pipeline, and renders the verified answer; production provider, persistence and deployment gaps are recorded rather than hidden.",
+      "scope": {
+        "read_paths": ["AGENTS.md", "backend/AGENTS.md", "frontend/AGENTS.md", "frontend/README.md", "docs/contracts/chat-and-jobs.md", "docs/contracts/retrieval.md", "docs/contracts/answer-and-citation.md", "docs/contracts/identity-and-policy.md", "docs/architecture/overview.md"],
+        "write_paths": ["backend/app/api", "backend/app/core", "backend/app/rag", "backend/tests", "frontend/src", "frontend/vite.config.ts", "frontend/README.md", "tests/integration", "harness/handoffs"],
+        "forbidden_paths": ["docs/contracts", "docs/design", "infra", ".env", "data"]
+      },
+      "architecture_blocks": ["01", "02", "03", "04", "05", "09", "11", "14"],
+      "requirements": ["FR-UI-003", "FR-RAG-001", "FR-RAG-008", "FR-RAG-010", "NFR-SEC-006", "NFR-QA-005"],
+      "contracts": ["docs/contracts/chat-and-jobs.md", "docs/contracts/retrieval.md", "docs/contracts/answer-and-citation.md", "docs/contracts/identity-and-policy.md"],
+      "validation": ["Run backend HTTP integration test for conversation -> query job -> ANSWERED citation", "Run frontend typecheck, lint, Vitest and production build", "Run Vite proxy smoke test against FastAPI and record limitations"],
+      "handoff": "harness/handoffs/INTEGRATION-001.md"
     },
     {
       "id": "RELEASE-001",

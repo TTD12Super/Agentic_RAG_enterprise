@@ -113,4 +113,4 @@ def test_task_and_handoff_keep_ingestion_provider_neutral():
     assert item["phase"] == 2
     assert "CHAT-001 must own query pause/resume" in read(HANDOFF)
     assert "No real object storage" in read(HANDOFF)
-    assert item["status"] == "PLANNED"
+    assert item["status"] == "DONE"

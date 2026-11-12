@@ -73,7 +73,7 @@ Copy `.env.example` to `.env.local` when a local API URL is needed. `VITE_*` val
 
 ### Contract boundary
 
-The shell follows the approved v1 contract and `docs/design/IMPLEMENTATION-BOUNDARY.md`: canonical role identifiers, backend-authoritative authorization, durable-job polling, and no MVP token streaming. The chat composer now calls the local `/api/v1` conversation and query-job endpoints; Figma remains the visual source of truth.
+The shell follows the approved v1 contract and `docs/design/IMPLEMENTATION-BOUNDARY.md`: canonical role identifiers, backend-authoritative authorization, server-side RAG streaming over `fetch`/SSE, and durable final-answer persistence. The chat composer calls the local `/api/v1` conversation and streaming endpoints; the polling endpoint remains available for recovery and non-streaming clients.
 
 The UI-001 gate provides the four required QA families with at least 10 materially different cases per family (40 cases total) in `tests/qa/frontend_boot`, plus 10 Vitest interaction tests and manual browser visual QA. Admin screens still use fixtures until their API clients are connected.
 

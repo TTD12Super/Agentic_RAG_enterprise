@@ -1,7 +1,7 @@
 import re
 import unittest
 
-from _baseline import CONTRACT, DATABASE_DOC, migration_text, read
+from ._baseline import CONTRACT, DATABASE_DOC, migration_text, read
 
 
 class DatabaseBaselineSecurityTests(unittest.TestCase):

@@ -13,6 +13,7 @@ from backend.app.api import identity as identity_api
 from backend.app.core.chat import AnswerState, CitationArtifact, QueryCompletion
 from backend.app.main import app
 from backend.app.observability import InMemoryAuditSink
+from backend.tests._admin_api_fixtures import auth, publish
 
 
 def request(method: str, path: str, **kwargs: object) -> httpx.Response:
@@ -189,12 +190,14 @@ def test_timeout_fails_without_answer():
 
 
 def test_citation_preview_and_download_are_separate_fresh_authorization_checks():
+    manager_headers, _ = auth("website_manager", tenant="public")
+    document_id, version_id, _ = publish(manager_headers)
     conversation_id, token = anonymous_conversation()
     chat_api.chat_service.executor = StubExecutor(
         QueryCompletion(
             AnswerState.ANSWERED,
             "public answer",
-            ({"citation_id": "c-1", "tenant_id": "public", "document_id": "doc-1", "version_id": "v-1"},),
+            ({"citation_id": "c-1", "tenant_id": "public", "document_id": str(document_id), "version_id": str(version_id)},),
         )
     )
     submitted = request(
@@ -220,12 +223,13 @@ def test_citation_preview_and_download_are_separate_fresh_authorization_checks()
     assert preview.status_code == 200 and preview.json()["preview"] == "public excerpt"
     assert download.status_code == 200 and download.content == b"public file"
 
-    chat_api.chat_service.repository.add_citation(
-        answer_id,
-        CitationArtifact(
-            artifact.citation, preview="revoked", download=b"revoked", classification="PUBLIC", status="REVOKED", current_version_id="v-1"
-        ),
+    revoked_version = request(
+        "POST",
+        f"/api/v1/documents/{document_id}/versions/{version_id}/revoke",
+        headers={**manager_headers, "Idempotency-Key": "citation-revoke-001"},
+        json={},
     )
+    assert revoked_version.status_code == 200
     revoked = request(
         "GET", f"/api/v1/answers/{answer_id}/citations/c-1/preview", headers={"X-Anonymous-Session": token}
     )

@@ -13,7 +13,7 @@ Validated API request; rendered answer and source link.
 
 - React + TypeScript client; anonymous, employee, Chairman and admin views.
 - Display QUEUED, PROCESSING, MAINTENANCE, final and controlled failure states.
-- MVP returns a complete answer without token streaming.
+- MVP returns a durable answer and may render provider-backed token deltas through the authorized SSE boundary.
 - Source expansion and original-document opening always go back through the Core authorization boundary.
 
 ## Ranh giới bảo mật
@@ -32,7 +32,7 @@ Các module ứng dụng phải tuân thủ contract tương ứng trong `docs/c
 
 ## Owner-provided behavior baseline
 
-- The UI must show `QUEUED`, `PROCESSING`, `PAUSED`, `MAINTENANCE`, completed and controlled failure states without token streaming.
+- The UI must show `QUEUED`, `PROCESSING`, `PAUSED`, `MAINTENANCE`, streamed deltas, completed and controlled failure states.
 - Citation details are collapsed by default but a visible source indicator remains available. Preview and original download use separate backend authorization checks.
 - Queue saturation shows `503`/`Retry-After`; rate limiting shows `429`; maintenance shows `503 MAINTENANCE_ACTIVE`.
 - Exact layout, components and interaction design remain governed by the Project Owner's Figma files.

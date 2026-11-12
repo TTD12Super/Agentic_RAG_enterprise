@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import StrEnum
 import hashlib
@@ -30,7 +30,7 @@ from backend.app.guardrails import (
 from backend.app.identity.models import AuthenticatedPrincipal
 from backend.app.knowledge.models import DOCXLocator, PDFLocator, SourceLocator, XLSXLocator
 from backend.app.models.policy import DataClassification
-from backend.app.orchestration.context import RetrievedEvidence, build_secure_context
+from backend.app.orchestration.context import AssembledContext, RetrievedEvidence, build_secure_context
 
 from .hybrid import HybridEvidence, HybridRetriever
 
@@ -79,6 +79,12 @@ class AnswerCitation:
     locator: SourceLocator
     evidence_snapshot_hash: str
     chunk_id: str
+    # Optional display metadata is additive; the authorization-bound identity
+    # and typed locator remain the source of truth.
+    title: str | None = None
+    filename: str | None = None
+    mime_type: str | None = None
+    location: Mapping[str, object] | None = None
 
     def __post_init__(self) -> None:
         for name in ("citation_id", "tenant_id", "document_id", "version_id", "chunk_id"):
@@ -96,6 +102,12 @@ class AnswerCitation:
             char not in "0123456789abcdef" for char in self.evidence_snapshot_hash
         ):
             raise ValueError("evidence_snapshot_hash must be a lowercase SHA-256 digest")
+        for name in ("title", "filename", "mime_type"):
+            value = getattr(self, name)
+            if value is not None and (not isinstance(value, str) or not value.strip()):
+                raise ValueError(f"{name} must be a non-empty string when present")
+        if self.location is not None and not isinstance(self.location, Mapping):
+            raise ValueError("location must be a mapping when present")
 
     @property
     def page(self) -> int | None:
@@ -108,7 +120,7 @@ class AnswerCitation:
         return (self.locator.source_span.start, self.locator.source_span.end)
 
     def to_dict(self) -> dict[str, object]:
-        return {
+        payload: dict[str, object] = {
             "citation_id": self.citation_id,
             "tenant_id": self.tenant_id,
             "document_id": self.document_id,
@@ -126,6 +138,13 @@ class AnswerCitation:
             "evidence_snapshot_hash": self.evidence_snapshot_hash,
             "chunk_id": self.chunk_id,
         }
+        for name in ("title", "filename", "mime_type"):
+            value = getattr(self, name)
+            if value is not None:
+                payload[name] = value
+        if self.location is not None:
+            payload["location"] = dict(self.location)
+        return payload
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":"))
@@ -138,6 +157,19 @@ class AnswerResult:
     citations: tuple[AnswerCitation, ...] = ()
     reason_codes: tuple[str, ...] = ()
     verification: VerificationResult | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class PreparedAnswer:
+    """Authorized retrieval context shared by batch and streaming answers."""
+
+    status: AnswerStatus
+    reason_codes: tuple[str, ...] = ()
+    context: AssembledContext | None = None
+    evidence_records: Mapping[str, EvidenceRecord] = field(default_factory=dict)
+    citation_metadata: Mapping[str, object] = field(default_factory=dict)
+    citations: tuple[AnswerCitation, ...] = ()
+    guardrail_citations: tuple[GuardrailCitation, ...] = ()
 
 
 AuthorizationCallback = Callable[[CitationRecord], AuthorizationDecision]
@@ -170,60 +202,21 @@ class DirectAnswerPipeline:
         *,
         policy_epoch: int,
     ) -> AnswerResult:
+        prepared = self.prepare_context(query, principal, policy_epoch=policy_epoch)
+        if prepared.status is not AnswerStatus.ANSWERED or prepared.context is None:
+            answer = (
+                "Insufficient evidence to answer this question."
+                if prepared.status is AnswerStatus.INSUFFICIENT_EVIDENCE
+                else ""
+            )
+            return self._failure(prepared.status, prepared.reason_codes, answer=answer)
+
+        evidence_records = prepared.evidence_records
+        citation_metadata = prepared.citation_metadata
         checked_query = normalize_user_input(query)
-        if not checked_query.allowed or checked_query.value is None:
-            return self._failure(AnswerStatus.ACCESS_DENIED, checked_query.reason_codes)
-
         try:
-            retrieval = self._retriever.search(
-                checked_query.value,
-                principal,
-                policy_epoch=policy_epoch,
-                top_k=self._top_k,
-            )
-        except Exception:
-            return self._failure(AnswerStatus.ERROR, ("retrieval_failed",))
-        if retrieval.status == "ERROR":
-            return self._failure(AnswerStatus.ERROR, ("retrieval_failed",))
-        if not retrieval.evidence:
-            return self._failure(
-                AnswerStatus.INSUFFICIENT_EVIDENCE,
-                ("insufficient_evidence",),
-                answer="Insufficient evidence to answer this question.",
-            )
-
-        all_evidence = retrieval.evidence + retrieval.expanded_context
-        evidence_records, citation_metadata = self._authorized_evidence(
-            all_evidence, principal.tenant_id, policy_epoch
-        )
-        if not evidence_records:
-            return self._failure(
-                AnswerStatus.INSUFFICIENT_EVIDENCE,
-                ("insufficient_evidence",),
-                answer="Insufficient evidence to answer this question.",
-            )
-
-        context_evidence = tuple(
-            RetrievedEvidence(
-                chunk_id=record.citation.chunk_id or record.citation.citation_id,
-                document_id=record.citation.document_id,
-                version_id=record.citation.version_id,
-                text=record.text,
-                page_start=record.citation.page,
-                page_end=record.citation.page,
-                source_span=(
-                    (record.citation.source_span.start, record.citation.source_span.end)
-                    if record.citation.source_span is not None
-                    else None
-                ),
-                retrieval_method="hybrid",
-            )
-            for record in evidence_records.values()
-        )
-        try:
-            context = build_secure_context(checked_query.value, context_evidence)
             generated = self._model_gateway.generate(
-                context.as_messages(), classification=DataClassification.INTERNAL
+                prepared.context.as_messages(), classification=DataClassification.INTERNAL
             )
             if not isinstance(generated, GeneratedAnswer):
                 return self._failure(AnswerStatus.ERROR, ("invalid_model_response",))
@@ -287,6 +280,88 @@ class DirectAnswerPipeline:
                 if citation_id in evidence_records
             ),
             verification=verification,
+        )
+
+    def prepare_context(
+        self,
+        query: str,
+        principal: AuthenticatedPrincipal,
+        *,
+        policy_epoch: int,
+    ) -> PreparedAnswer:
+        """Run authorized retrieval and build the provider-safe context once."""
+
+        checked_query = normalize_user_input(query)
+        if not checked_query.allowed or checked_query.value is None:
+            return PreparedAnswer(AnswerStatus.ACCESS_DENIED, checked_query.reason_codes)
+        try:
+            retrieval = self._retriever.search(
+                checked_query.value,
+                principal,
+                policy_epoch=policy_epoch,
+                top_k=self._top_k,
+            )
+        except Exception:
+            return PreparedAnswer(AnswerStatus.ERROR, ("retrieval_failed",))
+        if retrieval.status == "ERROR":
+            return PreparedAnswer(AnswerStatus.ERROR, ("retrieval_failed",))
+        if not retrieval.evidence:
+            return PreparedAnswer(
+                AnswerStatus.INSUFFICIENT_EVIDENCE,
+                ("insufficient_evidence",),
+            )
+
+        evidence_records, citation_metadata = self._authorized_evidence(
+            retrieval.evidence + retrieval.expanded_context,
+            principal.tenant_id,
+            policy_epoch,
+        )
+        if not evidence_records:
+            return PreparedAnswer(
+                AnswerStatus.INSUFFICIENT_EVIDENCE,
+                ("insufficient_evidence",),
+            )
+
+        context_evidence = tuple(
+            RetrievedEvidence(
+                chunk_id=record.citation.chunk_id or record.citation.citation_id,
+                document_id=record.citation.document_id,
+                version_id=record.citation.version_id,
+                text=record.text,
+                page_start=record.citation.page,
+                page_end=record.citation.page,
+                source_span=(
+                    (record.citation.source_span.start, record.citation.source_span.end)
+                    if record.citation.source_span is not None
+                    else None
+                ),
+                retrieval_method="hybrid",
+            )
+            for record in evidence_records.values()
+        )
+        try:
+            context = build_secure_context(checked_query.value, context_evidence)
+            citations = tuple(
+                _answer_citation(
+                    evidence_records[citation_id],
+                    citation_metadata[citation_id],
+                    default_expires_at=self._citation_expires_at,
+                )
+                for citation_id in evidence_records
+            )
+        except Exception:
+            return PreparedAnswer(AnswerStatus.ERROR, ("model_failed",))
+        guardrail_citations = tuple(
+            GuardrailCitation(citation_id, evidence_records[citation_id].text)
+            for citation_id in evidence_records
+        )
+        return PreparedAnswer(
+            AnswerStatus.ANSWERED,
+            context=context,
+            evidence_records=evidence_records,
+            citation_metadata=citation_metadata,
+            citations=citations,
+            guardrail_citations=guardrail_citations,
         )
 
     def _authorized_evidence(
@@ -408,6 +483,7 @@ __all__ = [
     "AnswerCitation",
     "AnswerModelGateway",
     "AnswerResult",
+    "PreparedAnswer",
     "AnswerStatus",
     "DirectAnswerPipeline",
     "GeneratedAnswer",

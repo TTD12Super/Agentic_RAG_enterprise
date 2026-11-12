@@ -21,7 +21,7 @@ from ..knowledge.models import (
     SourceSpan,
     XLSXLocator,
 )
-from ..integrations.model_gateway import ModelGateway
+from ..integrations.model_gateway import ModelEgressDenied, ModelGateway
 from ..models.adapters import EmbeddingRequest, EmbeddingResult
 from ..models.policy import DataClassification, ModelRoute
 from .parent_child import ParentRecord
@@ -181,6 +181,9 @@ class DenseRetriever:
                 # Query text can contain enterprise data; use the stricter route.
                 classification=DataClassification.INTERNAL,
             ).vectors[0]
+        except ModelEgressDenied:
+            # A policy denial is a safe no-evidence result, not an internal error.
+            return DenseRetrievalResult((), "INSUFFICIENT_EVIDENCE")
         except Exception:
             return DenseRetrievalResult((), "ERROR")
 

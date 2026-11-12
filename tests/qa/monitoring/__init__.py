@@ -1,1 +1,1 @@
-"""Four-family QA for the monitoring platform baseline."""
+"""Monitoring QA package."""
