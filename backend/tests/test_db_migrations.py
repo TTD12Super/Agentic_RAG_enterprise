@@ -31,11 +31,12 @@ class DatabaseMigrationSmokeTests(unittest.TestCase):
             "audit_events",
             "outbox_events",
             "idempotency_keys",
+            "access_requests",
         }
         with psycopg.connect(conninfo) as connection:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT version_num FROM alembic_version")
-                self.assertEqual(cursor.fetchone()[0], "0005_indexes")
+                self.assertEqual(cursor.fetchone()[0], "0007_identity_credentials")
                 cursor.execute(
                     "SELECT tablename FROM pg_catalog.pg_tables "
                     "WHERE schemaname = 'public'"

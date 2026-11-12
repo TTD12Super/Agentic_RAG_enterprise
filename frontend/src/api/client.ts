@@ -189,6 +189,19 @@ export type AccessRequestResponse = {
   email_confirmation?: string
 }
 
+export type AccessRequestMetadata = {
+  request_id: string
+  status: string
+  full_name: string
+  email: string
+  department: string
+  reason: string
+  created_at: string
+  reviewed_at?: string | null
+  reviewed_by?: string | null
+  access_granted: boolean
+}
+
 
 export type DashboardMetric<T = unknown> = {
   value: T | null
@@ -284,13 +297,14 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const body = await response.json().catch(() => ({})) as Record<string, unknown>
   if (!response.ok) {
     const detail = body.detail
+    const detailObject = typeof detail === 'object' && detail !== null ? detail as { code?: string; message?: string; retryable?: boolean } : undefined
     const detailMessage = typeof detail === 'object' && detail !== null
       ? (detail as { message?: string }).message
       : detail
     const message = body.message || detailMessage || body.code || `Request failed (${response.status})`
     throw new ApiError(String(message), {
-      code: typeof body.code === 'string' ? body.code : undefined,
-      retryable: body.retryable === true || response.status === 401 || response.status === 408 || response.status === 429 || response.status >= 500,
+      code: typeof body.code === 'string' ? body.code : detailObject?.code,
+      retryable: body.retryable === true || detailObject?.retryable === true || response.status === 401 || response.status === 408 || response.status === 429 || response.status >= 500,
       status: response.status,
     })
   }
@@ -684,6 +698,19 @@ export function getUsers() {
 
 export function getDepartments() {
   return request<{ departments: DepartmentRecord[] }>('/departments')
+}
+
+export function getAccessRequests(status = 'PENDING_ADMIN_REVIEW', limit = 20, offset = 0) {
+  const query = new URLSearchParams({ status, limit: String(limit), offset: String(offset) })
+  return request<PagedResponse<AccessRequestMetadata> & { filter: { status: string } }>(`/access-requests?${query.toString()}`)
+}
+
+export function reviewAccessRequest(requestId: string, decision: 'APPROVE' | 'REJECT') {
+  return request<AccessRequestMetadata>(`/access-requests/${encodeURIComponent(requestId)}/review`, {
+    method: 'POST',
+    headers: mutationHeaders(`access-request-review-${requestId}-${Date.now()}`),
+    body: JSON.stringify({ decision }),
+  })
 }
 
 export function createUser(payload: { email: string; password: string; roles: string[]; department_ids: string[]; mfa_code?: string }) {

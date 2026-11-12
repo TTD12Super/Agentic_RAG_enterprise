@@ -8,7 +8,7 @@ Backend owns the public `/api/v1` administration routes and orchestrates the exi
 
 - Document upload, validation status, two review decisions, publication, metadata, access grants, version history, soft deletion and permanent deletion subject to retention and legal hold.
 - Administrator-provisioned account lifecycle, activation and role/department assignments; the Website Manager has website management but no code/system operations.
-- `POST /api/v1/access-requests` records an employee access request without granting access; approval and provisioning are separate authorized, idempotent actions.
+- `POST /api/v1/access-requests` records an employee access request without granting access. Authenticated requests use the server-derived principal tenant; anonymous requests use the deployment-only `BACKEND_ACCESS_REQUEST_TENANT_ID` setting, never a client-provided tenant. Managers use `GET /api/v1/access-requests` and `POST /api/v1/access-requests/{request_id}/review` for tenant-scoped, idempotent approve/reject decisions; approval remains pending provisioning and never sends email implicitly.
 - Authorized audit and operational dashboard data without another user's conversation body, raw secrets or unrestricted source content.
 - Feedback review and aggregate quality/usage dashboard data, with measurement time, estimates and unavailable values clearly distinguished. Exact data fields and feedback access policy require owner and security review.
 

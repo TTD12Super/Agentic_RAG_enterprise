@@ -84,6 +84,9 @@ def assignment(tree_node: ast.AST, name: str) -> ast.Assign | ast.AnnAssign:
 
 
 def literal(value: ast.expr | None) -> object:
+    if isinstance(value, ast.Call) and isinstance(value.func, ast.Name) and value.func.id == "Field":
+        default = next((keyword.value for keyword in value.keywords if keyword.arg == "default"), None)
+        return ast.literal_eval(default)  # type: ignore[arg-type]
     return ast.literal_eval(value)  # type: ignore[arg-type]
 
 

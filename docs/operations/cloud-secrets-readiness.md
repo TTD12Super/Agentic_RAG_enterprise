@@ -73,7 +73,7 @@ These are names only. Values must be entered by the Project Owner or an authoriz
 | Qdrant | `QDRANT_URL`, `QDRANT_API_KEY`, `QDRANT_COLLECTION_PREFIX` | API key yes | dev/staging/prod, separately |
 | Object storage | `OBJECT_STORAGE_ENDPOINT`, `OBJECT_STORAGE_REGION`, `OBJECT_STORAGE_BUCKET`, `OBJECT_STORAGE_ACCESS_KEY_ID`, `OBJECT_STORAGE_SECRET_ACCESS_KEY` | Access/secret keys yes | separate bucket and credentials per environment |
 | Redis (optional) | `REDIS_URL`, `REDIS_PASSWORD`, `REDIS_TLS` | Password/URL yes | dev/staging/prod, separately |
-| Model gateway | `LLM_PRIMARY_PROVIDER`, `LLM_PRIMARY_MODEL`, `LLM_PRIMARY_API_KEY`, `LLM_FALLBACK_PROVIDER`, `LLM_FALLBACK_MODEL`, `LLM_FALLBACK_API_KEY` | API keys yes | only after `DEC-001` approval |
+| Model gateway | `BACKEND_GEMINI_API_KEY`, `BACKEND_GEMINI_MODEL` for the current Gemini adapter; future provider-neutral names remain pending `DEC-001` | API keys yes | only after `DEC-001` approval |
 | Embedding/reranker | `EMBEDDING_PROVIDER`, `EMBEDDING_MODEL`, `EMBEDDING_API_KEY`, `RERANKER_PROVIDER`, `RERANKER_MODEL`, `RERANKER_API_KEY` | API keys yes | only after `DEC-001` approval |
 | Observability | `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `PROMETHEUS_REMOTE_WRITE_URL`, `PROMETHEUS_REMOTE_WRITE_TOKEN` | Headers/tokens yes | only after `DEC-003` approval |
 | Deployment/CI | `REGISTRY_URL`, `REGISTRY_USERNAME`, `REGISTRY_PASSWORD`, `CLOUD_SUBSCRIPTION_ID`, `CLOUD_PROJECT_ID`, `CLOUD_TENANCY_ID` | Credentials/tokens yes | owner/CI scope only; never runtime-wide |

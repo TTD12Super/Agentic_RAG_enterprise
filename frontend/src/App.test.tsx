@@ -15,8 +15,8 @@ const principal = {
 
 const adminPrincipal = { ...principal, user_id: 'user-admin', roles: ['system_admin'] }
 
-function json(body: unknown, ok = true) {
-  return { ok, status: ok ? 200 : 404, json: async () => body } as Response
+function json(body: unknown, ok = true, status = ok ? 200 : 404) {
+  return { ok, status, json: async () => body } as Response
 }
 
 function streamResponse(body: string) {
@@ -65,6 +65,8 @@ beforeEach(() => {
     if (url.endsWith('/dashboard')) return json({ schema_version: '1.0', users: { value: { total: 2, active: 2 }, unit: 'users', status: 'MEASURED', available: true, is_estimate: false, provenance: 'identity_store', measurement_period: {} }, documents: { value: { total: 3 }, unit: 'documents', status: 'MEASURED', available: true, is_estimate: false, provenance: 'ingestion', measurement_period: {} }, usage: { value: { requests: 5 }, unit: 'requests', status: 'MEASURED', available: true, is_estimate: false, provenance: 'chat.repository', measurement_period: {} }, ingestion: { value: { jobs: 1 }, unit: 'jobs', status: 'MEASURED', available: true, is_estimate: false, provenance: 'ingestion', measurement_period: {} }, latency: { value: null, unit: 'milliseconds', status: 'UNAVAILABLE', available: false, is_estimate: false, provenance: 'telemetry', measurement_period: {}, reason: 'LATENCY_TELEMETRY_UNAVAILABLE' }, cost: { value: null, unit: 'USD', status: 'UNAVAILABLE', available: false, is_estimate: false, provenance: 'telemetry', measurement_period: {}, reason: 'PROVIDER_COST_UNAVAILABLE' }, evaluation: { value: null, unit: 'score', status: 'UNAVAILABLE', available: false, is_estimate: false, provenance: 'evaluation', measurement_period: {}, reason: 'EVALUATION_UNAVAILABLE' } })
     if (url.endsWith('/users')) return json({ users: [{ ...principal, email: 'manager@example.com', active: true }] })
     if (url.endsWith('/departments')) return json({ departments: [{ department_id: 'dept-1', tenant_id: 'tenant-test', name: 'Operations', active: true }] })
+    if (url.endsWith('/access-requests?status=PENDING_ADMIN_REVIEW&limit=20&offset=0')) return json({ items: [{ request_id: 'request-test', status: 'PENDING_ADMIN_REVIEW', full_name: 'Applicant Test', email: 'applicant@example.com', department: 'Finance', reason: 'Needs policy access.', created_at: '2026-01-01T00:00:00Z', reviewed_at: null, reviewed_by: null, access_granted: false }], pagination: { limit: 20, offset: 0, total: 1, has_more: false }, filter: { status: 'PENDING_ADMIN_REVIEW' } })
+    if (url.includes('/access-requests/request-test/review')) return json({ request_id: 'request-test', status: 'APPROVED_PENDING_PROVISIONING', full_name: 'Applicant Test', email: 'applicant@example.com', department: 'Finance', reason: 'Needs policy access.', created_at: '2026-01-01T00:00:00Z', reviewed_at: '2026-01-01T00:01:00Z', reviewed_by: 'user-admin', access_granted: false })
     if (url.endsWith('/documents?limit=20&offset=0')) return json({ schema_version: '1.0', items: [{ document_id: 'document-test', title: 'Backend document', classification: 'PUBLIC', status: 'ACTIVE', owner_department_id: 'dept-1', current_version_id: 'version-test' }], pagination: { limit: 20, offset: 0, total: 1, has_more: false } })
     if (url.endsWith('/approvals?limit=20&offset=0')) return json({ schema_version: '1.0', items: [{ document_id: 'document-test', version_id: 'version-test', version_number: 1, status: 'PENDING_REVIEW_2', sha256: 'a'.repeat(64), source_uri: 'private://test', job_id: 'ingestion-test', approvals: [{ stage: 1, decision: 'APPROVED', reviewer_id: 'reviewer-test', expires_at: '2026-01-01T00:30:00Z' }] }], pagination: { limit: 20, offset: 0, total: 1, has_more: false } })
     if (url.endsWith('/audit?limit=50&offset=0')) return json({ schema_version: '1.0', items: [{ event_id: 'event-test', event: 'ADMIN_SUCCESS', action: 'admin:document:list', outcome: 'SUCCESS', decision: 'ALLOW', request_id: 'request-test', traceparent: '00-test', trace_id: 'trace-test', principal_id: 'user-manager', tenant_id: 'tenant-test', code: 'DOCUMENTS_LISTED', occurred_at: '2026-01-01T00:00:00Z', safe_metadata: { route: 'admin:document:list' } }], pagination: { limit: 50, offset: 0, total: 1, has_more: false } })
@@ -180,6 +182,20 @@ describe('frontend/backend integration', () => {
     expect(document.querySelector('button.history-scrim')).toBeNull()
   })
 
+  it('searches history through the backend and restores focus after Escape', async () => {
+    render(<App />)
+    await waitFor(() => expect(screen.getByText('Purchasing policy')).toBeInTheDocument())
+    const historyButton = screen.getByText('History', { exact: true }).closest('button')!
+    fireEvent.click(historyButton)
+    const search = screen.getByRole('textbox', { name: 'Search conversation history' })
+    fireEvent.change(search, { target: { value: 'missing' } })
+    await waitFor(() => expect(screen.getByText('No conversations match this search.')).toBeInTheDocument())
+    expect(vi.mocked(fetch).mock.calls.some(([input]) => String(input).includes('search=missing'))).toBe(true)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    await waitFor(() => expect(historyButton).toHaveFocus())
+    expect(document.querySelector('#conversation-history-drawer.history-drawer-open')).toBeNull()
+  })
+
   it('renders dashboard metrics returned by the backend and unavailable telemetry honestly', async () => {
     render(<App />)
     await signInAsManager()
@@ -196,6 +212,13 @@ describe('frontend/backend integration', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Users & access' }))
     await waitFor(() => expect(screen.getByText('manager@example.com')).toBeInTheDocument())
     expect(screen.getByText('Operations')).toBeInTheDocument()
+    expect(screen.getByText('Access requests')).toBeInTheDocument()
+    expect(screen.getByText('Finance')).toBeInTheDocument()
+    expect(screen.getByText('Applicant Test')).toBeInTheDocument()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Approve request' }))
+    await waitFor(() => expect(screen.getByText('Request approved; provisioning is still required.')).toBeInTheDocument())
+    expect(vi.mocked(fetch).mock.calls.some(([input, init]) => String(input).includes('/access-requests/request-test/review') && init?.method === 'POST')).toBe(true)
   })
 
   it('renders documents, approvals and audit records from backend endpoints', async () => {
@@ -212,6 +235,28 @@ describe('frontend/backend integration', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Audit & monitoring' }))
     await waitFor(() => expect(screen.getByText('ADMIN_SUCCESS')).toBeInTheDocument())
     expect(screen.getByText('DOCUMENTS_LISTED')).toBeInTheDocument()
+  })
+
+  it('labels metadata registration as non-binary and prevents duplicate submit', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.endsWith('/auth/sign-in')) return json({ access_token: 'token-test', principal })
+      if (url.endsWith('/conversations?limit=20&offset=0')) return json({ items: [], pagination: { limit: 20, offset: 0, total: 0, has_more: false } })
+      if (url.includes('/documents?')) return json({ items: [], pagination: { limit: 20, offset: 0, total: 0, has_more: false } })
+      if (url.endsWith('/documents') && init?.method === 'POST') return json({ job_id: 'job-metadata', document_id: 'doc-metadata', version_id: 'version-metadata', state: 'QUEUED', current_stage: 'QUARANTINE', attempt: 1, error_code: null })
+      return json({})
+    }))
+    render(<App />)
+    await signInAsManager()
+    fireEvent.click(screen.getByRole('button', { name: 'Knowledge documents' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: /Register metadata/ })).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: /Register metadata/ }))
+    expect(screen.getByText(/does not upload a binary file/)).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Purchasing policy' } })
+    fireEvent.change(screen.getByLabelText('Filename'), { target: { value: 'policy.pdf' } })
+    fireEvent.submit(screen.getByLabelText('Title').closest('form')!)
+    await waitFor(() => expect(screen.getByText('Document metadata registered. No binary file was uploaded.')).toBeInTheDocument())
+    expect(vi.mocked(fetch).mock.calls.some(([input, request]) => String(input).endsWith('/documents') && request?.method === 'POST')).toBe(true)
   })
 
   it('polls transient query states and retryable failures until completion', async () => {
@@ -446,6 +491,77 @@ describe('frontend/backend integration', () => {
     expect(screen.queryByText('Invalid authentication credentials.')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Continue with Google/ })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Submit request/ })).toBeDisabled()
+  })
+
+  it('shows the MFA field only after the backend requires MFA', async () => {
+    let signInAttempts = 0
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith('/auth/sign-in')) {
+        signInAttempts += 1
+        return signInAttempts === 1
+          ? json({ code: 'MFA_REQUIRED', message: 'Additional authentication is required.' }, false, 401)
+          : json({ access_token: 'token-test', principal })
+      }
+      if (url.endsWith('/conversations?limit=20&offset=0')) return json({ items: [], pagination: { limit: 20, offset: 0, total: 0, has_more: false } })
+      return json({})
+    }))
+    render(<App />)
+    fireEvent.click(screen.getAllByRole('button', { name: 'Sign in' })[0])
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'manager@example.com' } })
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password' } })
+    fireEvent.submit(screen.getByLabelText('Email').closest('form')!)
+    await waitFor(() => expect(screen.getByText('Additional verification required')).toBeInTheDocument())
+    expect(screen.getByLabelText('MFA code')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('MFA code'), { target: { value: '123456' } })
+    fireEvent.submit(screen.getByLabelText('Email').closest('form')!)
+    await waitFor(() => expect(screen.getAllByText('website_manager').length).toBeGreaterThan(0))
+    expect(signInAttempts).toBe(2)
+  })
+
+  it.each([
+    ['ACCOUNT_INACTIVE', 'This account is inactive. Ask an administrator to activate it.'],
+    ['AUTH_UNAVAILABLE', 'Authentication is temporarily unavailable. Retry in a moment.'],
+    ['SESSION_EXPIRED', 'Your session has expired. Sign in again to continue.'],
+  ])('maps %s sign-in errors to truthful guidance', async (code, message) => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).endsWith('/auth/sign-in')) return json({ code, message: 'backend detail' }, false, code === 'AUTH_UNAVAILABLE' ? 503 : 401)
+      return json({ items: [], pagination: { limit: 20, offset: 0, total: 0, has_more: false } })
+    }))
+    render(<App />)
+    fireEvent.click(screen.getAllByRole('button', { name: 'Sign in' })[0])
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'user@example.com' } })
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password' } })
+    fireEvent.submit(screen.getByLabelText('Email').closest('form')!)
+    await waitFor(() => expect(screen.getByText(message)).toBeInTheDocument())
+  })
+
+  it('shows tenant scope and retries a conflicting access review', async () => {
+    let reviewAttempts = 0
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith('/auth/sign-in')) return json({ access_token: 'token-test', principal: adminPrincipal })
+      if (url.endsWith('/conversations?limit=20&offset=0')) return json({ items: [], pagination: { limit: 20, offset: 0, total: 0, has_more: false } })
+      if (url.endsWith('/users')) return json({ users: [{ ...principal, email: 'manager@example.com', active: true }] })
+      if (url.endsWith('/departments')) return json({ departments: [] })
+      if (url.includes('/access-requests?')) return json({ items: [{ request_id: 'request-test', status: 'PENDING_ADMIN_REVIEW', full_name: 'Applicant Test', email: 'applicant@example.com', department: 'Finance', reason: 'Needs policy access.', created_at: '2026-01-01T00:00:00Z', access_granted: false }], pagination: { limit: 20, offset: 0, total: 1, has_more: false }, filter: { status: 'PENDING_ADMIN_REVIEW' } })
+      if (url.includes('/access-requests/request-test/review')) {
+        reviewAttempts += 1
+        return reviewAttempts === 1 ? json({ code: 'ACCESS_REQUEST_CONFLICT' }, false, 409) : json({ request_id: 'request-test', status: 'APPROVED_PENDING_PROVISIONING', full_name: 'Applicant Test', email: 'applicant@example.com', department: 'Finance', reason: 'Needs policy access.', created_at: '2026-01-01T00:00:00Z', access_granted: false })
+      }
+      return json({})
+    }))
+    render(<App />)
+    await signInAsManager('admin@example.com')
+    expect(screen.getByText(/Tenant: tenant-test/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Users & access' }))
+    await waitFor(() => expect(screen.getByText('Applicant Test')).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: 'Approve request' }))
+    await waitFor(() => expect(screen.getByText(/changed before your decision/)).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    await waitFor(() => expect(screen.getByText('Request approved; provisioning is still required.')).toBeInTheDocument())
+    expect(reviewAttempts).toBe(2)
   })
 
   it('marks the unavailable language switch instead of exposing a no-op toggle', () => {

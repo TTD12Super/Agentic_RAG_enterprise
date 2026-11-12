@@ -29,13 +29,13 @@ The current product architecture remains:
 - Original files remain in private object storage.
 - Queue, cache/checkpoint store and cloud topology remain separate architecture decisions.
 
-DB-001 now provides the Backend-owned Alembic migration baseline. ORM models, repositories, runtime RLS policy and database QA remain separate implementation/integration concerns.
+DB-001 now provides the Backend-owned Alembic migration baseline. ORM models, repositories, runtime RLS policy and database QA remain separate implementation/integration concerns. The seven ordered Alembic revisions include durable employee onboarding requests (`0006_access_requests`) and local credential/rate-limit state (`0007_identity_credentials`).
 
 ## 2. Gap analysis
 
 | Existing component | Current state | Identified gap | Database V2 response |
 |---|---|---|---|
-| backend/app/db/migrations | Five ordered Alembic revisions | Migration baseline must remain Backend-owned and reversible | Implement and test migration order, constraints and rollback |
+| backend/app/db/migrations | Seven ordered Alembic revisions | Migration baseline must remain Backend-owned and reversible | Implement and test migration order, constraints and rollback |
 | Architecture overview | Defines Core, workers, jobs, maintenance and data ownership | No relational ERD or database invariants | Add tenant, job, lifecycle, checkpoint and consistency design |
 | Contracts | Proposal-level identity, document, ingestion, retrieval, cache and audit contracts | No complete relational ownership or composite tenant rules | Map each contract to authoritative tables and constraints |
 | Tasks | ARCH-001, CONTRACT-001, DB-001 and DB-QA-001 DONE | Runtime repositories, policy enforcement and RLS remain downstream | Keep migration ownership in Backend and review QA separately |
@@ -147,6 +147,21 @@ erDiagram
         timestamptz last_seen_at
         timestamptz expires_at
         timestamptz revoked_at
+    }
+
+    ACCESS_REQUESTS {
+        uuid id PK
+        uuid tenant_id FK
+        string requester_id
+        string full_name
+        string email
+        string department
+        string reason
+        boolean consent
+        string status
+        string reviewed_by
+        timestamptz reviewed_at
+        timestamptz created_at
     }
 
     DOCUMENTS {
@@ -455,6 +470,7 @@ erDiagram
     USERS ||--o{ AUTH_SESSIONS : opens
     TENANTS ||--o{ AUTH_SESSIONS : scopes
     TENANTS ||--o{ ANONYMOUS_SESSIONS : scopes
+    TENANTS ||--o{ ACCESS_REQUESTS : receives
 
     TENANTS ||--o{ DOCUMENTS : owns
     DEPARTMENTS o|--o{ DOCUMENTS : owns
@@ -519,12 +535,13 @@ erDiagram
 ### 5.1 Identity and tenant management
 
 - TENANTS: immutable tenant identity, deployment status and configuration boundary.
-- USERS: global login identity. Email is normalized and unique. No tenant_id.
+- USERS: global login identity. Email is normalized and unique. No tenant_id. Local password/MFA hashes are stored only in the backend database when local authentication is enabled; raw credentials are never returned.
 - DEPARTMENTS: tenant-owned department catalog.
 - TENANT_MEMBERSHIPS: user-to-tenant relationship, membership status, primary department, activation/revocation timestamps.
 - ROLES: controlled role catalog such as employee, chairman, website_manager and system_admin.
 - MEMBERSHIP_ROLES: many-to-many tenant role assignments.
 - AUTH_SESSIONS: hashed session/token records, expiry, revocation and last-use metadata. Store no raw token.
+- AUTH_FAILURES: durable bounded failed-attempt and lockout state keyed by normalized email.
 
 Security rule: a user is authorized in a tenant only through an active TENANT_MEMBERSHIPS row. Anonymous users have no membership and can use only the trusted public tenant route.
 
@@ -533,6 +550,13 @@ ANONYMOUS_SESSIONS:
 - `session_hash` is server-issued and unique per tenant; clients never choose a tenant or raw session identifier.
 - `last_seen_at` and `expires_at` enforce 30-minute idle expiry and the configured maximum lifetime; revoked sessions fail closed.
 - Conversation rows reference the session hash/session record and cannot be rebound silently to an authenticated user.
+
+ACCESS_REQUESTS:
+
+- Stores employee onboarding requests durably inside the requested tenant boundary.
+- `status` is `PENDING_ADMIN_REVIEW`, `APPROVED_PENDING_PROVISIONING` or `REJECTED`; approval does not itself create an identity or grant document access.
+- Applicant details are visible only through the manager-authorized review API; conversation bodies are never part of this table.
+- Idempotency for create/review mutations is recorded in `IDEMPOTENCY_KEYS` with the tenant and operation namespace.
 
 ### 5.2 Conversations and execution
 
@@ -721,6 +745,7 @@ Indexes should be added only for declared query patterns.
 | TENANT_MEMBERSHIPS | (user_id, tenant_id) | List a user’s tenant memberships |
 | AUTH_SESSIONS | (user_id, revoked_at, expires_at) | Session validation/revocation |
 | ANONYMOUS_SESSIONS | UNIQUE (tenant_id, session_hash) | Anonymous session binding/expiry |
+| ACCESS_REQUESTS | (tenant_id, status, created_at, id) | Manager review queue and tenant isolation |
 | DOCUMENTS | (tenant_id, status, updated_at) | Current tenant catalog |
 | DOCUMENT_VERSIONS | UNIQUE (tenant_id, document_id, version_number) | Version lookup |
 | DOCUMENT_VERSIONS | Partial UNIQUE (tenant_id, document_id) WHERE publication_status = ACTIVE | One active version |
@@ -903,6 +928,8 @@ DB-001 implements the following ordered, reversible Alembic sequence under `back
 3. 003_jobs_and_conversations: CONVERSATIONS, MESSAGES, QUERY_JOBS, AGENT_EXECUTION_STEPS, MAINTENANCE_WINDOWS.
 4. 004_audit_and_delivery: AUDIT_EVENTS, OUTBOX_EVENTS, ANSWER_CITATIONS, FEEDBACK.
 5. 005_indexes: approved query-path indexes and uniqueness constraints. RLS remains a separate defense-in-depth decision.
+6. 006_access_requests: durable employee access requests, manager review state and tenant/status queue index.
+7. 007_identity_credentials: durable local password/MFA hashes and authentication rate-limit state; provider/SSO adapters remain separate.
 
 Migration rules:
 
@@ -962,7 +989,7 @@ Current verification status:
 | Check | Status |
 |---|---|
 | Repository inspection | PASS — design files and task dependencies inspected |
-| Database migration execution | PASS — DB-001 upgrade 0001→0005 and downgrade to base |
+| Database migration execution | PASS — DB-001 upgrade 0001→0006 and downgrade to base |
 | PostgreSQL schema execution | PASS — disposable PostgreSQL execution |
 | RLS test | NOT RUN — no RLS policy exists |
 | Database integration tests | PASS — DB-QA-001 four-family package, 40 cases |

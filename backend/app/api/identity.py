@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from ..identity.errors import AUTH_REQUIRED, IdentityError
 from ..identity.models import AuthenticatedPrincipal
 from ..identity.service import AuthenticationService
+from ..identity.postgres_store import PostgresIdentityStore
 from ..identity.store import InMemoryIdentityStore
 from ..core.config import get_settings
 from ..db.runtime import PostgresAuditSink
@@ -35,9 +36,9 @@ class SignInResponse(BaseModel):
     principal: AuthenticatedPrincipal
 
 
-identity_store = InMemoryIdentityStore()
-identity_service = AuthenticationService(identity_store)
 _database_url = get_settings().database_url
+identity_store = PostgresIdentityStore(_database_url) if _database_url else InMemoryIdentityStore()
+identity_service = AuthenticationService(identity_store)
 audit_sink: AuditSink = PostgresAuditSink(_database_url) if _database_url else InMemoryAuditSink()
 router = APIRouter(tags=["identity", "administration"])
 

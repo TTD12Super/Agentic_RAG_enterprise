@@ -19,6 +19,8 @@ from ..authorization import (
     InMemoryPolicyStore,
     PolicyEnforcementPoint,
 )
+from ..core.config import get_settings
+from ..db.access_requests import PostgresAccessRequestStore
 from ..identity import Role
 from ..identity.errors import IdentityError
 from ..identity.models import AuthenticatedPrincipal, DepartmentRecord, IdentityRecord, MFA_ROLES
@@ -83,6 +85,10 @@ class EmployeeAccessRequest(_RequestModel):
     department: str = Field(min_length=1, max_length=160)
     reason: str = Field(min_length=1, max_length=4000)
     consent: bool
+
+
+class AccessRequestReview(_RequestModel):
+    decision: Literal["APPROVE", "REJECT"]
 
 
 class UploadRequest(_RequestModel):
@@ -271,6 +277,11 @@ def _bump_policy_epoch() -> None:
     admin_state.policy_store.policy_epoch += 1
 
 
+def _durable_access_request_store() -> PostgresAccessRequestStore | None:
+    database_url = get_settings().database_url
+    return PostgresAccessRequestStore(database_url) if database_url else None
+
+
 def _identity_payload(record: IdentityRecord) -> dict[str, object]:
     return {
         "user_id": record.user_id,
@@ -279,6 +290,23 @@ def _identity_payload(record: IdentityRecord) -> dict[str, object]:
         "roles": list(record.roles),
         "department_ids": list(record.department_ids),
         "active": record.active,
+    }
+
+
+def _access_request_payload(record: dict[str, object]) -> dict[str, object]:
+    """Return manager-authorized applicant details, never conversation content."""
+
+    return {
+        "request_id": record["request_id"],
+        "status": record["status"],
+        "full_name": record["full_name"],
+        "email": record["email"],
+        "department": record["department"],
+        "reason": record["reason"],
+        "created_at": record["created_at"],
+        "reviewed_at": record.get("reviewed_at"),
+        "reviewed_by": record.get("reviewed_by"),
+        "access_granted": False,
     }
 
 
@@ -1026,7 +1054,10 @@ async def create_access_request(
     if not body.consent:
         raise _problem("REQUEST_INVALID", "Consent is required.")
 
-    tenant_id = principal.tenant_id if principal else "public"
+    # Anonymous browsers cannot choose a tenant; deployment configuration routes the request.
+    tenant_id = principal.tenant_id if principal else get_settings().access_request_tenant_id.strip()
+    if not tenant_id:
+        raise _problem("TENANT_UNAVAILABLE", "Access requests are temporarily unavailable.", status_code=503, retryable=True)
     fingerprint = body.model_dump_json()
     key = (tenant_id, "access_request", idempotency_key.strip())
     existing = admin_state.idempotency.get(key)
@@ -1039,20 +1070,37 @@ async def create_access_request(
             )
         return existing[2]
 
-    request_id = str(uuid4())
-    payload = {
-        "request_id": request_id,
-        "status": "PENDING_ADMIN_REVIEW",
-        "email_confirmation": "NOT_CONFIGURED",
-    }
-    admin_state.access_requests[request_id] = {
-        "tenant_id": tenant_id,
-        "requester_id": principal.user_id if principal else ("anonymous-session" if anonymous_session else "anonymous"),
-        **body.model_dump(),
-        "status": payload["status"],
-        "created_at": _utc_z(datetime.now(timezone.utc)),
-    }
-    admin_state.idempotency[key] = (fingerprint, request_id, payload)
+    requester_id = principal.user_id if principal else ("anonymous-session" if anonymous_session else "anonymous")
+    durable_store = _durable_access_request_store()
+    if durable_store is not None:
+        payload = durable_store.create(
+            tenant_id=tenant_id,
+            requester_id=requester_id,
+            full_name=body.full_name,
+            email=body.email.strip().lower(),
+            department=body.department,
+            reason=body.reason,
+            consent=body.consent,
+            idempotency_key=idempotency_key.strip(),
+            fingerprint=fingerprint,
+        )
+    else:
+        request_id = str(uuid4())
+        payload = {
+            "request_id": request_id,
+            "status": "PENDING_ADMIN_REVIEW",
+            "email_confirmation": "NOT_CONFIGURED",
+        }
+        admin_state.access_requests[request_id] = {
+            "request_id": request_id,
+            "tenant_id": tenant_id,
+            "requester_id": requester_id,
+            **body.model_dump(),
+            "email": body.email.strip().lower(),
+            "status": payload["status"],
+            "created_at": _utc_z(datetime.now(timezone.utc)),
+        }
+        admin_state.idempotency[key] = (fingerprint, request_id, payload)
     identity_api._record(
         context,
         event="ACCESS_REQUEST_CREATED",
@@ -1062,6 +1110,139 @@ async def create_access_request(
         principal=principal,
         code="ACCESS_REQUEST_RECORDED",
         metadata={"route": "identity:access_request", "status_code": 202},
+    )
+    return payload
+
+
+@router.get("/access-requests")
+async def list_access_requests(
+    request: Request,
+    response: Response,
+    authorization: Annotated[str | None, Header()] = None,
+    status: str = Query(default="PENDING_ADMIN_REVIEW", min_length=1, max_length=40),
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0, le=10_000),
+) -> dict[str, object]:
+    context, principal = _resolve(request, response, authorization, action="admin:access_request:list")
+    _require_manager(context, principal, action="admin:access_request:list")
+    normalized_status = status.strip().upper()
+    allowed_statuses = {
+        "ALL",
+        "PENDING_ADMIN_REVIEW",
+        "APPROVED_PENDING_PROVISIONING",
+        "REJECTED",
+    }
+    if normalized_status not in allowed_statuses:
+        raise _problem("REQUEST_INVALID", "The request is invalid.")
+    durable_store = _durable_access_request_store()
+    if durable_store is not None:
+        records, total = durable_store.list(
+            tenant_id=principal.tenant_id,
+            status=normalized_status,
+            limit=limit,
+            offset=offset,
+        )
+        page = [_access_request_payload(record) for record in records]
+    else:
+        records = [
+            record
+            for record in admin_state.access_requests.values()
+            if record["tenant_id"] == principal.tenant_id
+            and (normalized_status == "ALL" or record["status"] == normalized_status)
+        ]
+        records.sort(key=lambda record: (str(record["created_at"]), str(record["request_id"])))
+        total = len(records)
+        page = [_access_request_payload(record) for record in records[offset : offset + limit]]
+    _record_success(context, principal, action="admin:access_request:list", code="ACCESS_REQUESTS_LISTED")
+    return {
+        "schema_version": "1.0",
+        "items": page,
+        "pagination": {
+            "limit": limit,
+            "offset": offset,
+            "total": total,
+            "has_more": offset + len(page) < total,
+        },
+        "filter": {"status": normalized_status},
+    }
+
+
+@router.post("/access-requests/{request_id}/review")
+async def review_access_request(
+    request_id: str,
+    request: Request,
+    response: Response,
+    authorization: Annotated[str | None, Header()] = None,
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
+) -> dict[str, object]:
+    context, principal = _resolve(request, response, authorization, action="admin:access_request:review")
+    _require_manager(context, principal, action="admin:access_request:review")
+    if not idempotency_key or not idempotency_key.strip():
+        raise _problem("IDEMPOTENCY_REQUIRED", "An idempotency key is required.")
+    parsed_request_id = _parse_uuid(request_id, label="request_id")
+    canonical_request_id = str(parsed_request_id)
+    body = await _body(request, AccessRequestReview)
+    fingerprint = body.model_dump_json()
+    durable_store = _durable_access_request_store()
+    if durable_store is not None:
+        payload = durable_store.review(
+            tenant_id=principal.tenant_id,
+            request_id=canonical_request_id,
+            reviewer_id=principal.user_id,
+            decision=body.decision,
+            idempotency_key=idempotency_key.strip(),
+            fingerprint=fingerprint,
+        )
+        identity_api._record(
+            context,
+            event="ACCESS_REQUEST_REVIEWED",
+            action="admin:access_request:review",
+            outcome="SUCCESS",
+            decision="ALLOW",
+            principal=principal,
+            code="ACCESS_REQUEST_REVIEWED",
+            metadata={"route": "admin:access_request:review", "status_code": 200},
+        )
+        return payload
+
+    record = admin_state.access_requests.get(canonical_request_id)
+    if record is None or record["tenant_id"] != principal.tenant_id:
+        raise _problem("NOT_FOUND_OR_FORBIDDEN", "The requested resource is unavailable.", status_code=404)
+
+    key = (principal.tenant_id, "access_request:review", idempotency_key.strip())
+    existing = admin_state.idempotency.get(key)
+    if existing:
+        if existing[:2] != (fingerprint, canonical_request_id):
+            raise _problem("IDEMPOTENCY_KEY_REUSED", "The idempotency key was already used.", status_code=409)
+        return dict(existing[2])
+
+    target_status = (
+        "APPROVED_PENDING_PROVISIONING" if body.decision == "APPROVE" else "REJECTED"
+    )
+    if record["status"] != "PENDING_ADMIN_REVIEW":
+        if record["status"] != target_status:
+            raise _problem("REQUEST_CONFLICT", "The access request has already been reviewed.", status_code=409)
+        payload = _access_request_payload(record)
+    else:
+        record.update(
+            {
+                "status": target_status,
+                "reviewed_at": _utc_z(datetime.now(timezone.utc)),
+                "reviewed_by": principal.user_id,
+            }
+        )
+        payload = _access_request_payload(record)
+
+    admin_state.idempotency[key] = (fingerprint, canonical_request_id, payload)
+    identity_api._record(
+        context,
+        event="ACCESS_REQUEST_REVIEWED",
+        action="admin:access_request:review",
+        outcome="SUCCESS",
+        decision="ALLOW",
+        principal=principal,
+        code="ACCESS_REQUEST_REVIEWED",
+        metadata={"route": "admin:access_request:review", "status_code": 200},
     )
     return payload
 

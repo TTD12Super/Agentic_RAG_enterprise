@@ -18,7 +18,7 @@ It is a handoff for Agent 2. It is not an approval to invent API behavior, permi
 
 The existing visual references in `docs/design/UI:UX reference/` already establish the Enterprise Knowledge AI direction: Inter typography, light surfaces, thin borders, controlled corporate red, compact enterprise tables and a 260px desktop navigation rail. This redesign keeps that usable foundation and makes the product feel more polished, more focused and more honest about unavailable backend capabilities.
 
-The current frontend is a single React shell in `frontend/src/App.tsx` with an in-memory bearer token, one locally remembered conversation ID, chat SSE, citation preview, and read-oriented administration views. There is no conversation-list screen, registration screen or Google OAuth flow in the current implementation.
+The current frontend is a single React shell in `frontend/src/App.tsx` with an in-memory bearer token, a backend-backed conversation history drawer, chat SSE, citation preview, and administration views. Registration/access-request screens are wired to their pending contract; Google OAuth is still unavailable.
 
 ### Scope lock
 
@@ -292,7 +292,7 @@ Access management sections:
 - Provision account: `POST /api/v1/users` or `/accounts`; show “Pending activation” because the current endpoint creates `active: false`.
 - Activate account: existing `POST /api/v1/users/{user_id}/activate` / `/accounts/{user_id}/activate`.
 - Document ACL: existing document access route with explicit `ALLOW`/`DENY` grants.
-- Access request review: unavailable until the access-request runtime endpoint exists.
+- Access request review: `GET /api/v1/access-requests` lists tenant-scoped safe metadata for managers; `POST /api/v1/access-requests/{request_id}/review` records an idempotent approve/reject decision. Authenticated requests use the principal tenant; anonymous requests are routed by server-only `BACKEND_ACCESS_REQUEST_TENANT_ID`, never by a browser tenant selector. Approval remains `APPROVED_PENDING_PROVISIONING` and never grants access or sends email automatically.
 
 Never provide a “grant access” shortcut that merely edits the browser. The backend must evaluate role, department, document ACL, tenant and explicit deny precedence.
 
@@ -365,13 +365,13 @@ The success state must be used only after the backend responds successfully. If 
 
 ### 7.3 Current backend gaps
 
-- Contract documentation mentions `POST /api/v1/access-requests`, but the current FastAPI route set has no runtime implementation for it.
+- `POST /api/v1/access-requests`, manager listing and approve/reject review routes now exist; access requests are durable when PostgreSQL is configured, but they do not yet provision an identity or send email.
 - Account creation exists for managers, but it returns an inactive account and there is no current email invitation or activation-token endpoint.
 - There is no password-reset endpoint.
 - There is no email verification/confirmation endpoint.
 - There is no Google OAuth flow.
 
-Until these are implemented and reviewed, Agent 2 should build the form and all validation/error states behind an explicit unavailable state or a feature flag, not a fake working registration flow.
+Until durable persistence, provisioning and email activation are implemented and reviewed, Agent 2 must keep the pending/provisioning states explicit and must not claim a completed registration flow.
 
 ## 8. Component state specification
 
@@ -488,13 +488,14 @@ Base URL is `/api/v1`. “Existing” means the current backend route was found 
 | Citation preview | `GET /answers/{answer_id}/citations/{citation_id}/preview` | Citation, preview, title, filename, location | Existing; separate reauthorization |
 | Original source | `GET /answers/{answer_id}/citations/{citation_id}/download` | Binary response after authorization | Existing backend; current FE design should add separate action |
 | Answer feedback | `POST /answers/{answer_id}/feedback` | Accepts rating/comment; returns feedback ID | Existing; current FE supports rating |
-| Conversation list/search | None | Proposed paged items with title and timestamps | Backend gap; do not fake history |
+| Conversation list/search | `GET /conversations?limit&offset&search` | Paged items with title and timestamps | Existing; FE history drawer reads metadata |
 | Conversation rename/archive/delete | None | No approved payload | Backend gap; hide actions |
 | Sign in | `POST /auth/sign-in` | Accepts email/password/optional MFA; returns bearer + principal | Existing; FE wired |
 | Current identity | `GET /auth/me` | Returns server principal | Existing; memory-token reload limitation |
 | Sign out | `POST /auth/sign-out` | 204 | Existing; FE wired |
 | Google sign-in | None | No OAuth initiation/callback/session | Backend gap and not approved MVP; disabled state |
-| Registration/access request | `POST /access-requests` | Records a pending request with idempotency; it never grants access | Backend wired; email confirmation and admin workflow remain unavailable |
+| Registration/access request | `POST /access-requests` | Records a pending request with idempotency; it never grants access | Backend wired; manager review is wired; durable provisioning and email confirmation remain unavailable |
+| Access request review | `GET /access-requests`, `POST /access-requests/{request_id}/review` | Tenant-scoped applicant metadata and idempotent approve/reject state | Backend + Users UI wired; Postgres persistence requires migrations/configuration; provisioning/email remain unavailable |
 | Email confirmation / activation | None at runtime | No invite token, verify or password-set payload | Backend gap; no fake success |
 | Admin overview | `GET /dashboard` | Metric objects with value, availability, provenance, period, reason | Existing; snapshot only |
 | Document catalog | `GET /documents?limit&offset` | Paged document metadata | Existing backend; current FE reads it |
@@ -522,9 +523,9 @@ Base URL is `/api/v1`. “Existing” means the current backend route was found 
 
 Priority order for a real production chat product:
 
-1. **Conversation list/search/reopen contract:** without it, saved chats cannot appear as a real history sidebar.
-2. **Durable authenticated session / refresh:** the current FE memory token is lost on reload; `GET /auth/me` cannot restore identity by itself.
-3. **Employee onboarding contract:** access request is now recorded, while admin approval/provisioning linkage, email invitation, activation token, password set/reset and verification remain to be implemented.
+1. **Durable authenticated session / refresh:** the current FE memory token is lost on reload; `GET /auth/me` cannot restore identity by itself.
+2. **Employee onboarding completion:** request recording, Postgres persistence and manager review now exist when the database is configured; identity provisioning, email invitation, activation token, password set/reset and verification remain to be implemented.
+3. **Conversation search/grouping and URL restore:** the basic history drawer exists, while search, grouping and deep-link semantics remain a UX enhancement.
 4. **Google OAuth decision and implementation:** only if the Project Owner changes the current MVP decision.
 5. **Binary document upload/object-storage contract:** align docs and implementation before exposing a real file picker.
 6. **Admin mutation schemas in frontend contract:** exact form validation, response envelopes, conflict errors and optimistic-lock behavior.
@@ -539,7 +540,7 @@ These are not silently implemented by the designer. Agent 2 may build read-only 
 
 - [ ] Read this document, `docs/design/IMPLEMENTATION-BOUNDARY.md`, `docs/contracts/v1-baseline.md`, `docs/contracts/identity-and-policy.md`, `docs/contracts/admin-management.md` and the relevant ingestion/answer contracts.
 - [ ] Confirm whether the Project Owner has an approved Figma version. If it conflicts with this document, stop and report the conflict to Main Agent.
-- [ ] Do not invent Google OAuth, email activation or binary upload success; `/access-requests` must remain a truthful pending-only contract.
+- [ ] Do not invent Google OAuth, email activation or binary upload success; access requests must remain truthful through pending/review/provisioning states.
 - [ ] Keep role names and deny semantics canonical.
 - [ ] Map every button to an existing endpoint or render it disabled with an explanation.
 
@@ -583,7 +584,7 @@ The following decisions are material and are intentionally not made by Agent 1:
 
 1. Approve the proposed conversation-list/search contract and retention/title semantics.
 2. Approve a secure browser session/refresh strategy.
-3. Approve whether employee onboarding is request-only, invitation-only or both, then implement the missing approval/email flow.
+3. Approve whether employee onboarding is request-only, invitation-only or both, then replace the current in-memory review flow with durable provisioning/email activation.
 4. Decide whether Google OAuth is added after the current MVP exclusion.
 5. Resolve the JSON-vs-multipart document upload conflict.
 6. Approve the Figma source of truth for the final visual handoff.
@@ -690,7 +691,7 @@ Until these are resolved, the correct product behavior is a polished UI with tru
 
 - Keep Login and Request access as separate routes/screens and separate component state machines.
 - Login errors stay beside the login form: invalid credentials, MFA required, inactive account, session error or backend unavailable.
-- Request access has its own unavailable/disabled state while `/access-requests` is missing.
+- Request access shows truthful recorded/pending state; manager users can review requests, while provisioning/email remain explicit unavailable states.
 - A login failure never redirects to onboarding automatically. Provide an explicit, secondary “Request access” link only if the product owner wants it.
 - Preserve the email field on retryable login failures; clear only secrets according to the security policy.
 
@@ -700,7 +701,7 @@ Until these are resolved, the correct product behavior is a polished UI with tru
 - Opening Request access starts with its own clean state and does not inherit login error text.
 - No login error reveals account existence beyond the approved safe message.
 - Keyboard focus moves to the first invalid field or error summary.
-- If the access-request endpoint is absent, submit is disabled with a truthful explanation.
+- If the access-request endpoint is unavailable, submit is disabled with a truthful explanation; review actions are never optimistic.
 
 ### 16.6 Finding: VI/EN switch does not work
 
@@ -749,7 +750,7 @@ Until these are resolved, the correct product behavior is a polished UI with tru
 **UX solution:**
 
 - **Google OAuth:** show a disabled `Continue with Google — not connected` state only if stakeholders need to see the future location. No popup, fake callback, fake principal or success toast.
-- **Request access:** render the form structure and validation design, but disable submission and say “Access requests are not connected yet. Contact your administrator.” until `POST /api/v1/access-requests` exists and is approved.
+- **Request access:** submit to `POST /api/v1/access-requests` and show the returned pending state. The manager review queue uses the separate list/review endpoints; no browser action may imply provisioning or email delivery.
 - **Email confirmation:** provide an invitation activation screen only as an unavailable/pending flow until the backend supplies a signed invitation/activation contract. Never show “email sent” or “account activated” from the browser alone.
 - **Current viable MVP path:** keep email/password sign-in and manager-provisioned inactive users as the only real authentication path. Make the inactive state explicit.
 

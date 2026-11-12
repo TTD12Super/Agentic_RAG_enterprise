@@ -37,7 +37,7 @@ class DisposablePostgresContractTests(unittest.TestCase):
         text = database()
         self.assertIn("PostgreSQL is authoritative", text)
         self.assertIn("Alembic migrations implement the authoritative schema", text)
-        self.assertIn("Five ordered Alembic revisions", text)
+        self.assertIn("Seven ordered Alembic revisions", text)
         self.assertIn("| Migration execution | NOT RUN", handoff())
         self.assertIn("| Database migration execution | PASS", text)
         self.assertIn('"INFRA-BOOT-QA-001"', tasks())

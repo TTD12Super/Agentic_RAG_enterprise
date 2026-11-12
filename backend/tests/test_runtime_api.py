@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from backend.app.core.config import get_settings
 from backend.app.db.runtime import normalize_database_url, stable_uuid
 from backend.tests._admin_api_fixtures import auth, key, request, reset, upload
 
@@ -8,6 +9,16 @@ def test_runtime_url_normalization_does_not_change_credentials() -> None:
     value = "postgresql+psycopg://user:password@example.test/db?sslmode=require"
     assert normalize_database_url(value) == "postgresql://user:password@example.test/db?sslmode=require"
     assert stable_uuid("tenant", "public") == stable_uuid("tenant", "public")
+
+
+def test_settings_accept_platform_database_url(monkeypatch) -> None:
+    get_settings.cache_clear()
+    monkeypatch.delenv("BACKEND_DATABASE_URL", raising=False)
+    monkeypatch.setenv("DATABASE_URL", "postgresql://alias.example/db")
+    try:
+        assert get_settings().database_url == "postgresql://alias.example/db"
+    finally:
+        get_settings.cache_clear()
 
 
 def test_document_and_approval_catalogs_are_real_api_shapes() -> None:

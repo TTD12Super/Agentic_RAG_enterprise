@@ -1,10 +1,9 @@
 """Small PostgreSQL runtime adapters for the API boundary.
 
-The migration schema is authoritative.  This module only persists the parts
-that already have a complete repository protocol (chat/jobs) and the
-append-only audit sink.  Identity and document lifecycle stay behind their
-existing in-memory adapters until their password/worker fields have an
-approved durable contract.
+The migration schema is authoritative. This module persists the runtime
+repositories that have complete contracts; identity credentials use the
+separate PostgreSQL identity adapter and document lifecycle remains behind
+its existing in-memory adapter until its worker/storage fields are durable.
 """
 
 from __future__ import annotations
