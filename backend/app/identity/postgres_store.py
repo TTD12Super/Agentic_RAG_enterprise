@@ -187,6 +187,12 @@ class PostgresIdentityStore(_PostgresAdapter, IdentityStore):
                 persisted_user = user_uuid(user_id)
                 persisted_tenant = tenant_uuid(tenant_id)
                 membership = _membership_uuid(tenant_id, user_id)
+                cursor.execute(
+                    "SELECT 1 FROM tenant_memberships WHERE id = %s AND tenant_id = %s AND user_id = %s",
+                    (membership, persisted_tenant, persisted_user),
+                )
+                if cursor.fetchone() is None:
+                    return None
                 if department_ids is not None:
                     values = tuple(department_ids)
                     department_value = _department_uuid(tenant_id, values[0]) if values else None
@@ -203,10 +209,6 @@ class PostgresIdentityStore(_PostgresAdapter, IdentityStore):
                         (department_value, membership, persisted_tenant),
                     )
                 if active is not None:
-                    cursor.execute(
-                        "UPDATE users SET status = %s, updated_at = now() WHERE id = %s",
-                        ("ACTIVE" if active else "SUSPENDED", persisted_user),
-                    )
                     cursor.execute(
                         "UPDATE tenant_memberships SET status = %s, revoked_at = CASE WHEN %s THEN NULL ELSE now() END WHERE id = %s AND tenant_id = %s",
                         ("ACTIVE" if active else "SUSPENDED", active, membership, persisted_tenant),
